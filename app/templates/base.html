@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Ekte Mat{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{{ url_for('shop.index') }}">Ekte Mat</a>
+    <nav>
+      <a href="{{ url_for('shop.index') }}">Meny</a>
+      <a href="{{ url_for('account.login') }}">Logg inn</a>
+      <a href="{{ url_for('admin.index') }}">Admin</a>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">Ekte Mat Online · kun syntetiske data</footer>
+</body>
+</html>
