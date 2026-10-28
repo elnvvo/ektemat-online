@@ -56,6 +56,9 @@
       </table>
     </div>
     <p class="hint">Prisen er et estimat. Endelig pris bekreftes av Ekte Mat når bestillingen er behandlet.</p>
-    <p><a href="{{ url_for('shop.menu') }}">← Fortsett å handle</a></p>
+    <p class="cart-actions">
+      <a href="{{ url_for('shop.menu') }}">← Fortsett å handle</a>
+      <a class="button" href="{{ url_for('shop.order') }}">Gå til bestilling</a>
+    </p>
   {% endif %}
 {% endblock %}

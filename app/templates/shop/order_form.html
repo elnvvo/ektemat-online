@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Bestilling · Ekte Mat{% endblock %}
+
+{% macro field_error(key) -%}
+  {% if errors[key] %}<p class="error" id="{{ key }}-error">{{ errors[key] }}</p>{% endif %}
+{%- endmacro %}
+{% macro invalid(key) -%}
+  {% if errors[key] %} aria-invalid="true" aria-describedby="{{ key }}-error"{% endif %}
+{%- endmacro %}
+
+{% block content %}
+  <p><a href="{{ url_for('shop.cart') }}">← Handlekurv</a></p>
+  <h1>Send bestilling</h1>
+  {% if errors %}
+    <p class="error" role="alert">Bestillingen ble ikke sendt. Rett opp feltene som er merket.</p>
+  {% endif %}
+  {{ field_error("cart") }}
+
+  <div class="order-layout">
+    <form class="form order-form" method="post" action="{{ url_for('shop.order') }}" novalidate>
+      {# Standardknapp først, så Enter i et felt sender bestillingen og ikke «Fjern gruppe». #}
+      <button class="visually-hidden" type="submit" name="action" value="submit" tabindex="-1" aria-hidden="true">Send</button>
+      <input type="hidden" name="group_count" value="{{ form.groups | length }}">
+
+      <label for="event_date">Arrangementsdato</label>
+      <input id="event_date" name="event_date" type="date" min="{{ min_date }}"
+             value="{{ form.event_date }}" required{{ invalid("event_date") }}>
+      {{ field_error("event_date") }}
+
+      <label for="guest_count">Antall gjester</label>
+      <input id="guest_count" name="guest_count" type="number" inputmode="numeric" min="1" step="1"
+             value="{{ form.guest_count }}" required{{ invalid("guest_count") }}>
+      {{ field_error("guest_count") }}
+
+      <label for="delivery_address">Leveringsadresse</label>
+      <textarea id="delivery_address" name="delivery_address" rows="3" autocomplete="street-address"
+                required{{ invalid("delivery_address") }}>{{ form.delivery_address }}</textarea>
+      {{ field_error("delivery_address") }}
+
+      <h2>Allergier og dietter</h2>
+      <p class="hint">Legg til en gruppe for hver allergi eller diett, f.eks. «4 gjester: vegan». Vi spør aldri om navn på gjester.</p>
+      {{ field_error("guest_groups") }}
+
+      {% for group in form.groups %}
+        {% set n = loop.index %}
+        {% set key = "guest_group-" ~ n %}
+        <fieldset class="guest-group"{{ invalid(key) }}>
+          <legend>Gjestegruppe {{ n }}</legend>
+          <label for="group-{{ n }}-size">Antall gjester i gruppen</label>
+          <input id="group-{{ n }}-size" name="group-{{ n }}-size" type="number" inputmode="numeric"
+                 min="1" step="1" value="{{ group.size }}">
+
+          <p class="group-heading">Allergener</p>
+          {% for allergen in allergens %}
+            <label class="check">
+              <input type="checkbox" name="group-{{ n }}-allergens" value="{{ allergen.code }}"
+                     {%- if allergen.code in group.allergens %} checked{% endif %}>
+              {{ allergen.name }}
+            </label>
+          {% endfor %}
+
+          <p class="group-heading">Diett</p>
+          {% for label in labels %}
+            <label class="check">
+              <input type="checkbox" name="group-{{ n }}-labels" value="{{ label.code }}"
+                     {%- if label.code in group.labels %} checked{% endif %}>
+              {{ label.name }}
+            </label>
+          {% endfor %}
+
+          <label for="group-{{ n }}-notes">Merknad <span class="hint">(valgfritt – ikke skriv navn på gjester)</span></label>
+          <input id="group-{{ n }}-notes" name="group-{{ n }}-notes" value="{{ group.notes }}">
+          {{ field_error(key) }}
+
+          <button class="link-danger" type="submit" name="action" value="remove_group-{{ n }}">Fjern gruppe {{ n }}</button>
+        </fieldset>
+      {% endfor %}
+
+      <button class="secondary-button" type="submit" name="action" value="add_group">+ Legg til gjestegruppe</button>
+      <button class="button" type="submit" name="action" value="submit">Send bestilling</button>
+    </form>
+
+    <aside class="order-summary" aria-labelledby="summary-heading">
+      <h2 id="summary-heading">Handlekurven</h2>
+      <ul>
+        {% for line in cart.lines %}
+          <li>
+            <span>{{ line.quantity }} × {{ line.food_item.name }}</span>
+            <span>{{ line.line_total_nok | nok }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="summary-total"><span>Estimert total</span> <span>{{ cart.estimated_total_nok | nok }}</span></p>
+      <p class="hint">Ingen betaling nå. Ekte Mat bekrefter bestillingen og endelig pris.</p>
+    </aside>
+  </div>
+{% endblock %}

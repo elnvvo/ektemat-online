@@ -11,6 +11,12 @@ def food_item_repository():
     return SqliteFoodItemRepository()
 
 
+def order_repository():
+    from app.models.repositories.sqlite_order_repository import SqliteOrderRepository
+
+    return SqliteOrderRepository()
+
+
 def user_repository():
     from app.models.repositories.sqlite_user_repository import SqliteUserRepository
 

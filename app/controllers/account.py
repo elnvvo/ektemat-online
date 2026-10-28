@@ -1,10 +1,10 @@
 """Konto: registrering, innlogging, mine bestillinger og spørsmål (UC3, UC5–UC7, UC12)."""
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app.controllers.auth import is_safe_next
+from app.controllers.auth import is_safe_next, login_required
 from app.models.errors import DuplicateEmailError, ValidationError
-from app.models.repositories import user_repository
+from app.models.repositories import order_repository, user_repository
 from app.models.user import User
 
 bp = Blueprint("account", __name__)
@@ -63,6 +63,16 @@ def login():
         render_template("account/login.html", email=email, error=error, next_url=next_url),
         status,
     )
+
+
+@bp.route("/orders/<int:order_id>")
+@login_required
+def order_detail(order_id):
+    """US-10: bekreftelse og detaljer. Bare kundens egne bestillinger (NFR-06)."""
+    order = order_repository().get_for_user(order_id, g.user.id)
+    if order is None:
+        abort(404)  # samme svar om ordren ikke finnes eller tilhører en annen
+    return render_template("account/order_detail.html", order=order)
 
 
 @bp.route("/logout", methods=["POST"])

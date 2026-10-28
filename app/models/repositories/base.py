@@ -7,6 +7,7 @@ user storyene som trenger dem.
 from abc import ABC, abstractmethod
 
 from app.models.food_item import Allergen, DietaryLabel, EventCategory, FoodItem
+from app.models.order import Order
 from app.models.user import User
 
 
@@ -92,6 +93,14 @@ class FoodItemRepository(ABC):
 
 class OrderRepository(ABC):
     """Bestillinger med ordrelinjer og gjestegrupper."""
+
+    @abstractmethod
+    def save(self, order: Order) -> Order:
+        """Lagrer en ny bestilling med linjer og gjestegrupper i én transaksjon (US-08)."""
+
+    @abstractmethod
+    def get_for_user(self, order_id: int, user_id: int) -> Order | None:
+        """Bestillingen hvis den tilhører denne kunden, ellers None (NFR-06)."""
 
 
 class QuestionRepository(ABC):

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Bestilling {{ order.number }} · Ekte Mat{% endblock %}
+{% block content %}
+  <h1>Bestilling {{ order.number }}</h1>
+
+  <dl class="order-facts">
+    <dt>Status</dt>
+    <dd><span class="status status-on">{{ order.status.label }}</span></dd>
+    <dt>Betaling</dt>
+    <dd>{{ order.payment_status.label }}</dd>
+    <dt>Sendt inn</dt>
+    <dd>{{ order.created_at | date_no }}</dd>
+    <dt>Arrangementsdato</dt>
+    <dd>{{ order.event_date | date_no }}</dd>
+    <dt>Antall gjester</dt>
+    <dd>{{ order.guest_count }}</dd>
+    <dt>Leveringsadresse</dt>
+    <dd class="address">{{ order.delivery_address }}</dd>
+  </dl>
+
+  <h2>Allergier og dietter</h2>
+  {% if order.guest_groups %}
+    <ul class="guest-groups">
+      {% for group in order.guest_groups %}
+        <li>
+          <strong>{{ group.size }} {{ "gjest" if group.size == 1 else "gjester" }}:</strong>
+          {{ (group.dietary_labels | map(attribute="name") | list + group.allergens | map(attribute="name") | list) | join(", ") }}
+          {% if group.notes %}<span class="hint">– {{ group.notes }}</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="hint">Ingen allergier eller dietter er oppgitt.</p>
+  {% endif %}
+
+  <h2>Retter</h2>
+  <div class="table-wrap">
+    <table class="cart-table">
+      <thead>
+        <tr>
+          <th scope="col">Rett</th>
+          <th scope="col" class="num">Antall</th>
+          <th scope="col" class="num">Pris per stk</th>
+          <th scope="col" class="num">Sum</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in order.lines %}
+          <tr>
+            <td data-label="Rett">{{ line.food_item_name }}</td>
+            <td class="num" data-label="Antall">{{ line.quantity }}</td>
+            <td class="num" data-label="Pris per stk">{{ line.unit_price_nok | nok }}</td>
+            <td class="num" data-label="Sum">{{ line.line_total_nok | nok }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row" colspan="3">Estimert total</th>
+          <td class="num total" data-label="Estimert total">{{ order.estimated_total_nok | nok }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <p class="hint">Prisen er et estimat. Du hører fra Ekte Mat når bestillingen er behandlet.</p>
+  <p><a href="{{ url_for('shop.menu') }}">← Tilbake til menyen</a></p>
+{% endblock %}
