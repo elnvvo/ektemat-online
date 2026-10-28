@@ -1,0 +1,98 @@
+# Plan: US-19, US-20, NFR-03 og NFR-06 – konto, innlogging og admintilgang
+
+## Kontekst
+Menyen (US-01/02, `4a1ec6f`) er ferdig, men appen har ingen brukere i domenemodellen. `/login` er en plassholder, og `/admin` er åpen for alle. US-19 (registrere og logge inn) og US-20 (egen admintilgang) er Must-storyer og trengs før bestilling (US-08) og alle adminstoryene. NFR-03 krever at passord bare lagres som saltet hash, og NFR-06 krever at alle `/admin/*`-ruter krever admin-rollen og at dette testes per rute. Handlekurv, bestilling og adminfunksjoner er **utenfor scope**.
+
+Planen kopieres til `docs/plans/us-19-20-auth.md` som første steg etter godkjenning.
+
+## Filer
+
+```
+app/models/user.py                               NY    Role, User, validering og passordhash
+app/models/errors.py                             NY    ValidationError, DuplicateEmailError
+app/models/repositories/base.py                  ENDRE UserRepository: get_by_id, get_by_email, add
+app/models/repositories/sqlite_user_repository.py NY   SQLite-implementasjon
+app/models/repositories/__init__.py              ENDRE user_repository()
+app/models/repositories/sqlite_connection.py     ENDRE fjerner seed_users() (erstattes av UserRepository.add)
+app/controllers/auth.py                          NY    load_current_user, login_required, admin_required
+app/controllers/account.py                       ENDRE /register, /login, /logout
+app/controllers/admin.py                         ENDRE alle ruter beskyttes med before_request + admin_required
+app/__init__.py                                  ENDRE before_request (g.user), 403-handler, cookie-innstillinger
+app/config.py                                    ENDRE SESSION_COOKIE_SAMESITE = "Lax" (HttpOnly er standard)
+app/templates/base.html                          ENDRE toppmeny avhengig av innlogging og rolle, flash-meldinger
+app/templates/account/login.html, register.html  ENDRE/NY skjemaer
+app/templates/errors/403.html                    NY
+app/static/css/style.css                         ENDRE skjema, feilmeldinger, logg ut-knapp
+seed.py                                          ENDRE brukere via user_repository()
+tests/conftest.py                                ENDRE fixtures: customer, admin, login()
+tests/test_auth.py                               NY    US-19, US-20, NFR-03, NFR-06
+```
+
+## Modell – `app/models/user.py`
+- `Role(str, Enum)`: `CUSTOMER = "customer"`, `ADMIN = "admin"` (samme verdier som CHECK i `schema.sql`)
+- `@dataclass User(id, email, name, phone, password_hash, role)`, med `is_admin` (property) og `check_password(password)` via `werkzeug.security.check_password_hash`
+- `User.register(email, name, password) -> User`: normaliserer e-post (`strip().lower()`), validerer (navn påkrevd, e-post med `@` og `.`, passord på **minst 8 tegn**) og kaster `ValidationError({felt: melding})`. Passordet hashes med `generate_password_hash` (scrypt med salt, NFR-03). Rollen er **alltid CUSTOMER**, og metoden tar ikke inn noen rolle, så admin kan ikke lages via nettsiden.
+- `User.create_admin(...)` brukes bare av `seed.py`.
+
+Validering ligger i modellen, ikke i controlleren (som i design.md §3).
+
+## Repository
+`base.py` – `UserRepository` får de abstrakte metodene `get_by_id(id)`, `get_by_email(email)` og `add(user) -> User` (kaster `DuplicateEmailError` hvis e-posten finnes).
+`sqlite_user_repository.py` – bruker `get_db()`. `add` fanger `sqlite3.IntegrityError` på UNIQUE(email). `seed_users()` i `sqlite_connection.py` fjernes, så UserRepository er det eneste stedet som leser og skriver brukere.
+
+## Controllere
+**`app/controllers/auth.py`**
+- `load_current_user()` registreres som `app.before_request` og setter `g.user` fra `session["user_id"]` via `user_repository().get_by_id`.
+- `login_required(view)`: ikke innlogget → `redirect(url_for("account.login", next=request.full_path))`
+- `admin_required(view)`: ikke innlogget → redirect til `/login` som over; innlogget kunde → `abort(403)`
+
+**`account.py`**
+- `GET/POST /register`: navn, e-post og passord. Ved feil rendres skjemaet på nytt med status 400, og meldingen står ved feltet. Når registreringen går bra, kjøres `session.clear()`, `session["user_id"] = id` og redirect til menyen med flash-meldingen «Velkommen, <navn>». Hvis e-posten finnes fra før, vises «Det finnes allerede en konto med denne e-postadressen».
+- `GET/POST /login`: ved feil e-post **eller** feil passord vises samme generelle melding, «Feil e-post eller passord», med status 401. Ved riktig innlogging kjøres `session.clear()` (hindrer session fixation), og så redirect til `next` hvis den er en trygg relativ sti (starter med `/` og ikke `//`, for å hindre open redirect), ellers til menyen.
+- `POST /logout`: `session.clear()` og redirect til forsiden. Bare POST, så en lenke eller et bilde ikke kan logge noen ut.
+
+**`admin.py`** – `@bp.before_request` + `@admin_required` på en tom funksjon. Da er **alle** nåværende og fremtidige `/admin`-ruter beskyttet uten at noen må huske decoratoren (NFR-06).
+
+**403** – `errors/403.html` med teksten «Du har ikke tilgang til denne siden», registrert med `app.register_error_handler(403, ...)`.
+
+## View – toppmenyen i `base.html`
+- Ikke innlogget: Meny · Logg inn · Registrer
+- Kunde: Meny · *Kari Testkunde* · [Logg ut]
+- Admin: Meny · Admin · *Admin Testesen* · [Logg ut]
+
+«Logg ut» er en knapp i et lite POST-skjema. Flash-meldingene vises øverst i `<main>`.
+
+## Seed
+`seed.py` lager admin med `User.create_admin` og kundene med `User.register`, og lagrer dem med `user_repository().add`. E-postadressene og passordene fra `.env` er de samme som før.
+
+## Tester – `tests/test_auth.py`
+Fixtures i `conftest.py`: `customer` og `admin` (lages via repositoryet med syntetiske passord) og en `login(client, email, password)`-hjelper.
+
+**US-19**
+- `test_register_creates_account_and_logs_in`: ny e-post og passord på 8 tegn gir en konto, og brukeren er innlogget (navnet vises i toppmenyen)
+- `test_register_rejects_short_password`: 7 tegn gir 400, en melding og ingen konto
+- `test_register_rejects_duplicate_email`
+- `test_register_cannot_create_admin`: en POST med `role=admin` gir likevel rollen CUSTOMER
+- `test_wrong_password_gives_generic_message`: feil passord og ukjent e-post gir **identisk** melding og status
+- `test_login_and_logout`
+
+**US-20 / NFR-06**
+- `test_customer_gets_403_on_admin`
+- `test_anonymous_is_redirected_to_login` (med `next=/admin`)
+- `test_admin_can_open_admin`
+- `test_every_admin_route_requires_admin_role`: går gjennom `app.url_map` og sjekker hver regel med endpoint `admin.*` for både anonym (302 → /login) og kunde (403). Testen dekker også ruter som legges til senere.
+
+**NFR-03**
+- `test_password_is_stored_as_salted_hash`: hashen er ikke lik passordet, starter med `scrypt:`, og to brukere med samme passord får ulike hasher (salt)
+- `test_no_secrets_in_tracked_files`: `.env` er ignorert av git (`git check-ignore .env`), og `.env.example` har tomme verdier
+
+## Merknader
+- Telefonnummer spørres ikke om ved registrering (dataminimering). Feltet finnes i modellen og er valgfritt.
+- CSRF-beskyttelse av skjemaene (f.eks. Flask-WTF) er ikke med. Det kan legges til som en egen oppgave.
+- Den andre delen av NFR-06 («en kunde kan bare lese egne ordre») testes når «Mine bestillinger» kommer (US-11). `login_required` er klar til bruk da.
+
+## Verifisering
+1. `pytest` → alle tester grønne
+2. `python seed.py` og `flask run` i nettleservinduet: registrer en ny kunde og sjekk toppmenyen (navn + Logg ut, ingen Admin), og at `/admin` gir 403. Logg ut, og sjekk at `/admin` sender til `/login?next=/admin`. Logg inn som admin og sjekk at Admin-lenken vises og `/admin` gir 200. Feil passord skal gi den generelle meldingen.
+3. `grep sqlite3` treffer bare `app/models/repositories/`
+4. Commit (når du ber om det) med en melding som nevner US-19, US-20, NFR-03 og NFR-06

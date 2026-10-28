@@ -7,10 +7,23 @@ user storyene som trenger dem.
 from abc import ABC, abstractmethod
 
 from app.models.food_item import Allergen, DietaryLabel, EventCategory, FoodItem
+from app.models.user import User
 
 
 class UserRepository(ABC):
-    """Kunder og administratorer."""
+    """Kunder og administratorer. Eneste sted som leser og skriver brukere."""
+
+    @abstractmethod
+    def get_by_id(self, user_id: int) -> User | None:
+        """Brukeren med denne id-en, eller None."""
+
+    @abstractmethod
+    def get_by_email(self, email: str) -> User | None:
+        """Brukeren med denne e-postadressen (normalisert), eller None."""
+
+    @abstractmethod
+    def add(self, user: User) -> User:
+        """Lagrer en ny bruker og returnerer den med id. Kaster DuplicateEmailError."""
 
 
 class FoodItemRepository(ABC):

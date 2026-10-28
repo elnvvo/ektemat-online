@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Registrer deg · Ekte Mat{% endblock %}
+{% block content %}
+  <h1>Registrer deg</h1>
+  <form class="form" method="post" action="{{ url_for('account.register') }}" novalidate>
+    <label for="name">Navn</label>
+    <input id="name" name="name" autocomplete="name" value="{{ form.name }}" required
+           {%- if errors.name %} aria-invalid="true" aria-describedby="name-error"{% endif %}>
+    {% if errors.name %}<p class="error" id="name-error">{{ errors.name }}</p>{% endif %}
+
+    <label for="email">E-post</label>
+    <input id="email" name="email" type="email" autocomplete="email" value="{{ form.email }}" required
+           {%- if errors.email %} aria-invalid="true" aria-describedby="email-error"{% endif %}>
+    {% if errors.email %}<p class="error" id="email-error">{{ errors.email }}</p>{% endif %}
+
+    <label for="password">Passord <span class="hint">(minst 8 tegn)</span></label>
+    <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required
+           {%- if errors.password %} aria-invalid="true" aria-describedby="password-error"{% endif %}>
+    {% if errors.password %}<p class="error" id="password-error">{{ errors.password }}</p>{% endif %}
+
+    <button class="button" type="submit">Opprett konto</button>
+  </form>
+  <p>Har du allerede konto? <a href="{{ url_for('account.login') }}">Logg inn</a></p>
+{% endblock %}

@@ -29,16 +29,5 @@ def init_db():
     db.commit()
 
 
-def seed_users(users):
-    """Setter inn brukere for seed.py. users: dicts med email, name, phone, password_hash, role."""
-    db = get_db()
-    db.executemany(
-        "INSERT INTO users (email, name, phone, password_hash, role)"
-        " VALUES (:email, :name, :phone, :password_hash, :role)",
-        users,
-    )
-    db.commit()
-
-
 def init_app(app):
     app.teardown_appcontext(close_db)

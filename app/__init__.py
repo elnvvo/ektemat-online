@@ -1,7 +1,7 @@
 """Ekte Mat Online – application factory."""
 import os
 
-from flask import Flask
+from flask import Flask, render_template
 
 from app.config import Config
 
@@ -32,9 +32,17 @@ def create_app(test_config=None):
     app.register_blueprint(account_bp)
     app.register_blueprint(admin_bp)
 
+    from app.controllers.auth import load_current_user
+
+    app.before_request(load_current_user)
+    app.register_error_handler(403, forbidden)
     app.add_template_filter(format_nok, "nok")
 
     return app
+
+
+def forbidden(error):
+    return render_template("errors/403.html"), 403
 
 
 def format_nok(value):

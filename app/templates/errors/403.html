@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Ingen tilgang · Ekte Mat{% endblock %}
+{% block content %}
+  <h1>Ingen tilgang</h1>
+  <p>Du har ikke tilgang til denne siden.</p>
+  <p><a href="{{ url_for('shop.menu') }}">Tilbake til menyen</a></p>
+{% endblock %}

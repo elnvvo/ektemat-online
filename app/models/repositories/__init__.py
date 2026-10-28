@@ -9,3 +9,9 @@ def food_item_repository():
     from app.models.repositories.sqlite_food_item_repository import SqliteFoodItemRepository
 
     return SqliteFoodItemRepository()
+
+
+def user_repository():
+    from app.models.repositories.sqlite_user_repository import SqliteUserRepository
+
+    return SqliteUserRepository()

@@ -11,11 +11,24 @@
     <a class="brand" href="{{ url_for('shop.index') }}">Ekte Mat</a>
     <nav>
       <a href="{{ url_for('shop.menu') }}">Meny</a>
-      <a href="{{ url_for('account.login') }}">Logg inn</a>
-      <a href="{{ url_for('admin.index') }}">Admin</a>
+      {% if g.user %}
+        {% if g.user.is_admin %}<a href="{{ url_for('admin.index') }}">Admin</a>{% endif %}
+        <span class="user-name">{{ g.user.name }}</span>
+        <form class="logout" method="post" action="{{ url_for('account.logout') }}">
+          <button type="submit">Logg ut</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('account.login') }}">Logg inn</a>
+        <a href="{{ url_for('account.register') }}">Registrer</a>
+      {% endif %}
     </nav>
   </header>
   <main>
+    {% with messages = get_flashed_messages() %}
+      {% for message in messages %}
+        <p class="flash" role="status">{{ message }}</p>
+      {% endfor %}
+    {% endwith %}
     {% block content %}{% endblock %}
   </main>
   <footer class="site-footer">Ekte Mat Online · kun syntetiske data</footer>

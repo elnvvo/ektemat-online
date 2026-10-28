@@ -6,12 +6,12 @@ import os
 import sys
 from decimal import Decimal
 
-from werkzeug.security import generate_password_hash
-
 from app import create_app
+from app.models.errors import ValidationError
 from app.models.food_item import Allergen, DietaryLabel, FoodItem
-from app.models.repositories import food_item_repository
-from app.models.repositories.sqlite_connection import init_db, seed_users
+from app.models.repositories import food_item_repository, user_repository
+from app.models.repositories.sqlite_connection import init_db
+from app.models.user import User
 
 PLACEHOLDER_IMAGE = "img/placeholder.svg"
 
@@ -85,29 +85,20 @@ def build_users():
     if not admin_password or not customer_password:
         sys.exit("Sett SEED_ADMIN_PASSWORD og SEED_CUSTOMER_PASSWORD i .env (se .env.example).")
 
-    return [
-        {
-            "email": "admin@ektemat.test",
-            "name": "Admin Testesen",
-            "phone": None,
-            "password_hash": generate_password_hash(admin_password),
-            "role": "admin",
-        },
-        {
-            "email": "kunde1@example.test",
-            "name": "Kari Testkunde",
-            "phone": "40000001",
-            "password_hash": generate_password_hash(customer_password),
-            "role": "customer",
-        },
-        {
-            "email": "kunde2@example.test",
-            "name": "Ola Testkunde",
-            "phone": "40000002",
-            "password_hash": generate_password_hash(customer_password),
-            "role": "customer",
-        },
-    ]
+    # Admin lages bare her; den kan ikke registreres via nettsiden (US-20).
+    try:
+        return [
+            User.create_admin("admin@ektemat.test", "Admin Testesen", admin_password),
+            User.register("kunde1@example.test", "Kari Testkunde", customer_password, phone="40000001"),
+            User.register("kunde2@example.test", "Ola Testkunde", customer_password, phone="40000002"),
+        ]
+    except ValidationError as error:
+        sys.exit(f"Ugyldige seed-passord i .env: {error.messages}")
+
+
+def seed_users(users):
+    repository = user_repository()
+    return [repository.add(user) for user in users]
 
 
 def seed_menu():
@@ -148,12 +139,12 @@ def main():
     app = create_app()
     with app.app_context():
         init_db()
-        seed_users(users)
+        users = seed_users(users)
         items = seed_menu()
 
     print(f"Database laget: {app.config['DATABASE']}")
     for user in users:
-        print(f"  {user['role']:<8} {user['email']}")
+        print(f"  {user.role.value:<8} {user.email}")
     for item in items:
         status = "publisert" if item.published else "ikke publisert"
         print(f"  rett     {item.name} ({item.price_nok} kr, {status})")
