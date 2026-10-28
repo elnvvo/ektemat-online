@@ -63,10 +63,13 @@ def publish_item(item_id):
     return redirect(url_for("admin.items"))
 
 
-@bp.route("/items/<int:item_id>/archive", methods=["POST"])
+@bp.route("/items/<int:item_id>/archive", methods=["GET", "POST"])
 @admin_required
 def archive_item(item_id):
+    """GET viser en bekreftelsesside (virker uten JavaScript-dialoger), POST arkiverer."""
     item = _get_or_404(item_id)
+    if request.method == "GET":
+        return render_template("admin/item_archive.html", item=item)
     food_item_repository().archive(item.id)
     flash(f"Fjernet fra menyen og arkivert: {item.name}")
     return redirect(url_for("admin.items"))

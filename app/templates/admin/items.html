@@ -37,11 +37,7 @@
                   <button type="submit">{{ "Avpubliser" if item.published else "Publiser" }}</button>
                 </form>
                 <a href="{{ url_for('admin.edit_item', item_id=item.id) }}">Endre</a>
-                <form method="post" action="{{ url_for('admin.archive_item', item_id=item.id) }}"
-                      data-confirm="Fjerne {{ item.name }} fra menyen? Retten arkiveres og kan gjenopprettes."
-                      onsubmit="return confirm(this.dataset.confirm);">
-                  <button type="submit" class="danger">Fjern</button>
-                </form>
+                <a class="danger" href="{{ url_for('admin.archive_item', item_id=item.id) }}">Fjern</a>
               </td>
             </tr>
           {% endfor %}

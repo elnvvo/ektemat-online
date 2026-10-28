@@ -289,8 +289,22 @@ nav {
   cursor: pointer;
 }
 
-.actions button.danger {
+.actions .danger {
   color: #b3261e;
+}
+
+.confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.danger-button {
+  border: 0;
+  background: #b3261e;
+  font: inherit;
+  cursor: pointer;
 }
 
 .status {

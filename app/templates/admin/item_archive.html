@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Fjern {{ item.name }} · Admin · Ekte Mat{% endblock %}
+{% block content %}
+  <p><a href="{{ url_for('admin.items') }}">← Matretter</a></p>
+  <h1>Fjerne {{ item.name }}?</h1>
+  <p>Retten fjernes fra menyen og arkiveres. Den slettes ikke, så gamle bestillinger viser fortsatt hva som ble bestilt, og du kan gjenopprette den senere.</p>
+  <form class="confirm-actions" method="post" action="{{ url_for('admin.archive_item', item_id=item.id) }}">
+    <button class="button danger-button" type="submit">Ja, fjern {{ item.name }}</button>
+    <a href="{{ url_for('admin.items') }}">Avbryt</a>
+  </form>
+{% endblock %}

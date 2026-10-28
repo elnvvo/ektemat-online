@@ -201,6 +201,16 @@ def test_remove_archives_item_instead_of_deleting(app, admin_client, catalog, cu
     assert "Fiskesuppe" not in menu_names(admin_client)
 
 
+def test_remove_asks_for_confirmation_first(app, admin_client, catalog):
+    item = add_item(app, catalog, published=True)
+
+    response = admin_client.get(f"/admin/items/{item.id}/archive")
+
+    assert response.status_code == 200
+    assert "Ja, fjern Fiskesuppe" in response.get_data(as_text=True)
+    assert get_item(app, item.id).archived is False
+
+
 def test_archived_item_cannot_be_published_until_restored(app, admin_client, catalog):
     item = add_item(app, catalog, published=True)
     admin_client.post(f"/admin/items/{item.id}/archive")
