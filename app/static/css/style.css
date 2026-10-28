@@ -647,6 +647,91 @@ nav {
   padding-left: 1.25rem;
 }
 
+/* Admin: bestillinger (US-12, US-13, US-14) */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.filter-bar label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.filter-bar select,
+.filter-bar input {
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: #fff;
+  font: inherit;
+  font-weight: 400;
+}
+
+.filter-bar .button {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.customer-email {
+  display: block;
+  font-size: 0.8125rem;
+}
+
+.status-panel {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.status-panel h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+}
+
+.status-panel h2 + * {
+  margin-bottom: 1rem;
+}
+
+.status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.status-actions form {
+  margin: 0;
+}
+
+.status-actions .button {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.status-actions .secondary-button {
+  margin-top: 0;
+}
+
+.reason-form {
+  max-width: 28rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.reason-form .button {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+}
+
 .placeholder {
   color: var(--muted);
   font-style: italic;

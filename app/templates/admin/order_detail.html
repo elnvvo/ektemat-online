@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% set action_labels = {
+  "approved": "Godkjenn",
+  "in_preparation": "Start forberedelse",
+  "delivered": "Marker som levert",
+  "rejected": "Avvis",
+  "cancelled": "Kanseller",
+} %}
+{% block title %}{{ order.number }} · Admin · Ekte Mat{% endblock %}
+{% block content %}
+  <p><a href="{{ url_for('admin.orders') }}">← Bestillinger</a></p>
+  <h1>Bestilling {{ order.number }}</h1>
+
+  <dl class="order-facts">
+    <dt>Kunde</dt>
+    <dd>
+      {% if order.customer %}{{ order.customer.name }} · {{ order.customer.email }}{% if order.customer.phone %} · {{ order.customer.phone }}{% endif %}
+      {% else %}<span class="hint">Slettet kunde</span>{% endif %}
+    </dd>
+    <dt>Status</dt>
+    <dd><span class="status status-{{ order.status.value }}">{{ order.status.label }}</span></dd>
+    {% if order.status_reason %}
+      <dt>Begrunnelse</dt>
+      <dd>{{ order.status_reason }}</dd>
+    {% endif %}
+    <dt>Betaling</dt>
+    <dd>{{ order.payment_status.label }}</dd>
+    <dt>Sendt inn</dt>
+    <dd>{{ order.created_at | date_no }}</dd>
+    <dt>Arrangementsdato</dt>
+    <dd>{{ order.event_date | date_no }}</dd>
+    <dt>Antall gjester</dt>
+    <dd>{{ order.guest_count }}</dd>
+    <dt>Leveringsadresse</dt>
+    <dd class="address">{{ order.delivery_address }}</dd>
+  </dl>
+
+  <section class="status-panel" aria-labelledby="status-heading">
+    <h2 id="status-heading">Ordrestatus</h2>
+    {% if order.allowed_statuses %}
+      <div class="status-actions">
+        {% for status in order.allowed_statuses if status not in reason_required %}
+          <form method="post" action="{{ url_for('admin.order_status', order_id=order.id) }}">
+            <input type="hidden" name="status" value="{{ status.value }}">
+            <button class="button" type="submit">{{ action_labels[status.value] }}</button>
+          </form>
+        {% endfor %}
+      </div>
+      {% for status in order.allowed_statuses if status in reason_required %}
+        <form class="form reason-form" method="post" action="{{ url_for('admin.order_status', order_id=order.id) }}">
+          <input type="hidden" name="status" value="{{ status.value }}">
+          <label for="reason-{{ status.value }}">Begrunnelse for «{{ action_labels[status.value] }}» <span class="hint">(vises for kunden)</span></label>
+          <textarea id="reason-{{ status.value }}" name="reason" rows="2" required></textarea>
+          <button class="danger-button button" type="submit">{{ action_labels[status.value] }}</button>
+        </form>
+      {% endfor %}
+    {% else %}
+      <p class="hint">Ingen flere endringer mulig ({{ order.status.label | lower }}).</p>
+    {% endif %}
+
+    <h2>Betaling</h2>
+    {% if order.allowed_payment_statuses %}
+      <div class="status-actions">
+        {% for status in order.allowed_payment_statuses %}
+          <form method="post" action="{{ url_for('admin.order_payment', order_id=order.id) }}">
+            <input type="hidden" name="payment_status" value="{{ status.value }}">
+            <button class="secondary-button" type="submit">{{ status.label }}</button>
+          </form>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="hint">Betalt – ingen flere endringer.</p>
+    {% endif %}
+  </section>
+
+  <h2>Allergier og dietter</h2>
+  {% if order.guest_groups %}
+    <ul class="guest-groups">
+      {% for group in order.guest_groups %}
+        <li>
+          <strong>{{ group.size }} {{ "gjest" if group.size == 1 else "gjester" }}:</strong>
+          {{ (group.dietary_labels | map(attribute="name") | list + group.allergens | map(attribute="name") | list) | join(", ") }}
+          {% if group.notes %}<span class="hint">– {{ group.notes }}</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="hint">Ingen allergier eller dietter er oppgitt.</p>
+  {% endif %}
+
+  <h2>Retter</h2>
+  <div class="table-wrap">
+    <table class="cart-table">
+      <thead>
+        <tr>
+          <th scope="col">Rett</th>
+          <th scope="col" class="num">Antall</th>
+          <th scope="col" class="num">Pris per stk</th>
+          <th scope="col" class="num">Sum</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in order.lines %}
+          <tr>
+            <td data-label="Rett">{{ line.food_item_name }}</td>
+            <td class="num" data-label="Antall">{{ line.quantity }}</td>
+            <td class="num" data-label="Pris per stk">{{ line.unit_price_nok | nok }}</td>
+            <td class="num" data-label="Sum">{{ line.line_total_nok | nok }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row" colspan="3">Estimert total</th>
+          <td class="num total" data-label="Estimert total">{{ order.estimated_total_nok | nok }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+{% endblock %}

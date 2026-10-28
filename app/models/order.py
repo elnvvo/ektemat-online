@@ -4,8 +4,9 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 
-from app.models.errors import ValidationError
+from app.models.errors import InvalidTransitionError, ValidationError
 from app.models.food_item import Allergen, DietaryLabel
+from app.models.user import User
 
 
 class OrderStatus(str, Enum):
@@ -42,6 +43,27 @@ class PaymentStatus(str, Enum):
             "invoiced": "Fakturert",
             "paid": "Betalt",
         }[self.value]
+
+
+# Tilstandsmaskinene som tabeller: nåværende tilstand -> lovlige neste tilstander.
+ORDER_TRANSITIONS = {  # design.md §4
+    OrderStatus.SUBMITTED: {OrderStatus.APPROVED, OrderStatus.REJECTED, OrderStatus.CANCELLED},
+    OrderStatus.APPROVED: {OrderStatus.IN_PREPARATION, OrderStatus.CANCELLED},
+    OrderStatus.IN_PREPARATION: {OrderStatus.DELIVERED},
+    OrderStatus.DELIVERED: set(),
+    OrderStatus.REJECTED: set(),
+    OrderStatus.CANCELLED: set(),
+}
+
+PAYMENT_TRANSITIONS = {  # design.md §5
+    PaymentStatus.NOT_PAID: {PaymentStatus.DEPOSIT_PAID, PaymentStatus.INVOICED, PaymentStatus.PAID},
+    PaymentStatus.DEPOSIT_PAID: {PaymentStatus.INVOICED},
+    PaymentStatus.INVOICED: {PaymentStatus.PAID},
+    PaymentStatus.PAID: set(),
+}
+
+# Avvis og kanseller krever en begrunnelse, som også vises for kunden (US-13).
+REASON_REQUIRED = {OrderStatus.REJECTED, OrderStatus.CANCELLED}
 
 
 @dataclass
@@ -81,6 +103,43 @@ class Order:
     created_at: datetime | None = None
     lines: list[OrderLine] = field(default_factory=list)
     guest_groups: list[GuestGroup] = field(default_factory=list)
+    # User 1 -> 0..* Order. Fylles bare inn når admin henter bestillinger.
+    customer: User | None = None
+
+    @property
+    def allowed_statuses(self):
+        """Lovlige neste ordrestatuser, i samme rekkefølge som enumerasjonen."""
+        return [s for s in OrderStatus if s in ORDER_TRANSITIONS[self.status]]
+
+    @property
+    def allowed_payment_statuses(self):
+        return [s for s in PaymentStatus if s in PAYMENT_TRANSITIONS[self.payment_status]]
+
+    def change_status(self, new_status, reason=None):
+        """US-13: flytter ordren i tilstandsmaskinen. Ved feil endres ingenting."""
+        new_status = _as_enum(OrderStatus, new_status)
+        if new_status is None or new_status not in ORDER_TRANSITIONS[self.status]:
+            target = new_status.label if new_status else "ukjent status"
+            raise InvalidTransitionError(
+                {"status": f"Kan ikke endre status fra {self.status.label} til {target}."}
+            )
+        reason = (reason or "").strip()
+        if new_status in REASON_REQUIRED and not reason:
+            raise ValidationError(
+                {"reason": f"Skriv en begrunnelse for å sette status til {new_status.label}."}
+            )
+        self.status = new_status
+        self.status_reason = reason if new_status in REASON_REQUIRED else None
+
+    def change_payment_status(self, new_status):
+        """US-14: flytter betalingsstatusen i sin egen tilstandsmaskin."""
+        new_status = _as_enum(PaymentStatus, new_status)
+        if new_status is None or new_status not in PAYMENT_TRANSITIONS[self.payment_status]:
+            target = new_status.label if new_status else "ukjent status"
+            raise InvalidTransitionError(
+                {"payment_status": f"Kan ikke endre betaling fra {self.payment_status.label} til {target}."}
+            )
+        self.payment_status = new_status
 
     @property
     def number(self):
@@ -177,6 +236,13 @@ class Order:
             lines=lines,
             guest_groups=groups,
         )
+
+
+def _as_enum(enum_class, value):
+    try:
+        return enum_class(value)
+    except ValueError:
+        return None
 
 
 def _is_blank_group(data):

@@ -5,9 +5,10 @@ kommer nå, og Neo4j-implementasjonene i Oblig 5. Metodene legges til sammen med
 user storyene som trenger dem.
 """
 from abc import ABC, abstractmethod
+from datetime import date
 
 from app.models.food_item import Allergen, DietaryLabel, EventCategory, FoodItem
-from app.models.order import Order
+from app.models.order import Order, OrderStatus
 from app.models.user import User
 
 
@@ -105,6 +106,23 @@ class OrderRepository(ABC):
     @abstractmethod
     def get_for_user(self, order_id: int, user_id: int) -> Order | None:
         """Bestillingen hvis den tilhører denne kunden, ellers None (NFR-06)."""
+
+    @abstractmethod
+    def list_all(
+        self,
+        status: OrderStatus | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> list[Order]:
+        """Alle bestillinger med kunde, sortert etter arrangementsdato, filtrert (admin, US-12)."""
+
+    @abstractmethod
+    def get(self, order_id: int) -> Order | None:
+        """Hele bestillingen med kunde, linjer og gjestegrupper (admin)."""
+
+    @abstractmethod
+    def update_status(self, order: Order) -> None:
+        """Lagrer status, status_reason og payment_status (validert i modellen, US-13/14)."""
 
 
 class QuestionRepository(ABC):

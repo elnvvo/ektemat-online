@@ -6,6 +6,10 @@
   <dl class="order-facts">
     <dt>Status</dt>
     <dd><span class="status status-{{ order.status.value }}">{{ order.status.label }}</span></dd>
+    {% if order.status_reason %}
+      <dt>Begrunnelse</dt>
+      <dd>{{ order.status_reason }}</dd>
+    {% endif %}
     <dt>Betaling</dt>
     <dd>{{ order.payment_status.label }}</dd>
     <dt>Sendt inn</dt>

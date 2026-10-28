@@ -2,12 +2,15 @@
 
 Alle ruter i denne blueprinten krever admin-rollen (US-20, NFR-06).
 """
+from datetime import date
+
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from app.controllers.auth import admin_required
 from app.models.errors import ValidationError
 from app.models.food_item import FoodItem
-from app.models.repositories import food_item_repository
+from app.models.order import REASON_REQUIRED, OrderStatus
+from app.models.repositories import food_item_repository, order_repository
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -82,6 +85,99 @@ def restore_item(item_id):
     food_item_repository().restore(item.id)
     flash(f"Gjenopprettet (ikke publisert): {item.name}")
     return redirect(url_for("admin.items"))
+
+
+# US-12 / US-13 / US-14: bestillinger
+
+
+@bp.route("/orders")
+@admin_required
+def orders():
+    """US-12: alle bestillinger sortert etter arrangementsdato, filtrert på status og periode."""
+    filters = {
+        "status": request.args.get("status", ""),
+        "from": request.args.get("from", ""),
+        "to": request.args.get("to", ""),
+    }
+    status = None
+    if filters["status"]:
+        try:
+            status = OrderStatus(filters["status"])
+        except ValueError:
+            flash("Ukjent status i filteret ble ignorert.", "error")
+            filters["status"] = ""
+    date_from = _filter_date(filters, "from")
+    date_to = _filter_date(filters, "to")
+
+    return render_template(
+        "admin/orders.html",
+        orders=order_repository().list_all(status, date_from, date_to),
+        filters=filters,
+        statuses=list(OrderStatus),
+    )
+
+
+@bp.route("/orders/<int:order_id>")
+@admin_required
+def order_detail(order_id):
+    return render_template(
+        "admin/order_detail.html",
+        order=_get_order_or_404(order_id),
+        reason_required=REASON_REQUIRED,
+    )
+
+
+@bp.route("/orders/<int:order_id>/status", methods=["POST"])
+@admin_required
+def order_status(order_id):
+    """US-13: lovlige overganger avgjøres av tilstandsmaskinen i Order. Ved feil lagres ingenting."""
+    order = _get_order_or_404(order_id)
+    try:
+        order.change_status(request.form.get("status", ""), request.form.get("reason"))
+    except ValidationError as error:
+        _flash_errors(error)
+    else:
+        order_repository().update_status(order)
+        flash(f"Status endret til {order.status.label}.")
+    return redirect(url_for("admin.order_detail", order_id=order_id))
+
+
+@bp.route("/orders/<int:order_id>/payment", methods=["POST"])
+@admin_required
+def order_payment(order_id):
+    """US-14: betalingsstatus i sin egen tilstandsmaskin."""
+    order = _get_order_or_404(order_id)
+    try:
+        order.change_payment_status(request.form.get("payment_status", ""))
+    except ValidationError as error:
+        _flash_errors(error)
+    else:
+        order_repository().update_status(order)
+        flash(f"Betaling endret til {order.payment_status.label}.")
+    return redirect(url_for("admin.order_detail", order_id=order_id))
+
+
+def _filter_date(filters, key):
+    if not filters[key]:
+        return None
+    try:
+        return date.fromisoformat(filters[key])
+    except ValueError:
+        flash(f"Ugyldig dato «{filters[key]}» i filteret ble ignorert.", "error")
+        filters[key] = ""
+        return None
+
+
+def _get_order_or_404(order_id):
+    order = order_repository().get(order_id)
+    if order is None:
+        abort(404)
+    return order
+
+
+def _flash_errors(error):
+    for message in error.messages.values():
+        flash(message, "error")
 
 
 def _item_form(item):

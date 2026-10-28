@@ -7,6 +7,7 @@ from app.models.food_item import Allergen, DietaryLabel
 from app.models.order import GuestGroup, Order, OrderLine, OrderStatus, PaymentStatus
 from app.models.repositories.base import OrderRepository
 from app.models.repositories.sqlite_connection import get_db
+from app.models.user import Role, User
 
 
 class SqliteOrderRepository(OrderRepository):
@@ -67,54 +68,91 @@ class SqliteOrderRepository(OrderRepository):
         return [_to_order(row) for row in rows]
 
     def get_for_user(self, order_id, user_id):
-        db = get_db()
-        row = db.execute(
+        row = get_db().execute(
             "SELECT * FROM orders WHERE id = ? AND user_id = ?", (order_id, user_id)
         ).fetchone()
-        if row is None:
-            return None
-        order = _to_order(row)
+        return _load_details(_to_order(row)) if row else None
 
-        # Navnet hentes fra matretten (finnes også når den er arkivert); prisen er kopien i ordrelinjen.
-        for line in db.execute(
-            "SELECT ol.food_item_id, f.name, ol.quantity, ol.unit_price_nok FROM order_lines ol"
-            " JOIN food_items f ON f.id = ol.food_item_id WHERE ol.order_id = ? ORDER BY f.name",
-            (order_id,),
-        ):
-            order.lines.append(
-                OrderLine(
-                    food_item_id=line["food_item_id"],
-                    food_item_name=line["name"],
-                    quantity=line["quantity"],
-                    unit_price_nok=Decimal(str(line["unit_price_nok"])),
-                )
+    def list_all(self, status=None, date_from=None, date_to=None):
+        sql = _WITH_CUSTOMER + " WHERE 1 = 1"
+        params = []
+        if status is not None:
+            sql += " AND o.status = ?"
+            params.append(status.value)
+        if date_from is not None:
+            sql += " AND o.event_date >= ?"
+            params.append(date_from.isoformat())
+        if date_to is not None:
+            sql += " AND o.event_date <= ?"
+            params.append(date_to.isoformat())
+        sql += " ORDER BY o.event_date, o.id"
+        return [_to_order(row) for row in get_db().execute(sql, params)]
+
+    def get(self, order_id):
+        row = get_db().execute(_WITH_CUSTOMER + " WHERE o.id = ?", (order_id,)).fetchone()
+        return _load_details(_to_order(row)) if row else None
+
+    def update_status(self, order):
+        db = get_db()
+        db.execute(
+            "UPDATE orders SET status = ?, status_reason = ?, payment_status = ? WHERE id = ?",
+            (order.status.value, order.status_reason, order.payment_status.value, order.id),
+        )
+        db.commit()
+
+
+# Admin trenger kunden; brukes av list_all og get.
+_WITH_CUSTOMER = (
+    "SELECT o.*, u.email AS customer_email, u.name AS customer_name,"
+    " u.phone AS customer_phone, u.role AS customer_role"
+    " FROM orders o LEFT JOIN users u ON u.id = o.user_id"
+)
+
+
+def _load_details(order):
+    """Fyller inn linjer og gjestegrupper."""
+    db = get_db()
+
+    # Navnet hentes fra matretten (finnes også når den er arkivert); prisen er kopien i ordrelinjen.
+    for line in db.execute(
+        "SELECT ol.food_item_id, f.name, ol.quantity, ol.unit_price_nok FROM order_lines ol"
+        " JOIN food_items f ON f.id = ol.food_item_id WHERE ol.order_id = ? ORDER BY f.name",
+        (order.id,),
+    ):
+        order.lines.append(
+            OrderLine(
+                food_item_id=line["food_item_id"],
+                food_item_name=line["name"],
+                quantity=line["quantity"],
+                unit_price_nok=Decimal(str(line["unit_price_nok"])),
             )
+        )
 
-        groups = {}
-        for group in db.execute(
-            "SELECT id, size, notes FROM guest_groups WHERE order_id = ? ORDER BY id", (order_id,)
+    groups = {}
+    for group in db.execute(
+        "SELECT id, size, notes FROM guest_groups WHERE order_id = ? ORDER BY id", (order.id,)
+    ):
+        groups[group["id"]] = GuestGroup(size=group["size"], notes=group["notes"])
+    if groups:
+        placeholders = ",".join("?" * len(groups))
+        for link in db.execute(
+            "SELECT ga.guest_group_id, a.code, a.name FROM guest_group_allergens ga"
+            " JOIN allergens a ON a.code = ga.allergen_code"
+            f" WHERE ga.guest_group_id IN ({placeholders}) ORDER BY a.name",
+            list(groups),
         ):
-            groups[group["id"]] = GuestGroup(size=group["size"], notes=group["notes"])
-        if groups:
-            placeholders = ",".join("?" * len(groups))
-            for link in db.execute(
-                "SELECT ga.guest_group_id, a.code, a.name FROM guest_group_allergens ga"
-                " JOIN allergens a ON a.code = ga.allergen_code"
-                f" WHERE ga.guest_group_id IN ({placeholders}) ORDER BY a.name",
-                list(groups),
-            ):
-                groups[link["guest_group_id"]].allergens.append(Allergen(link["code"], link["name"]))
-            for link in db.execute(
-                "SELECT gd.guest_group_id, d.code, d.name FROM guest_group_dietary_labels gd"
-                " JOIN dietary_labels d ON d.code = gd.dietary_label_code"
-                f" WHERE gd.guest_group_id IN ({placeholders}) ORDER BY d.code",
-                list(groups),
-            ):
-                groups[link["guest_group_id"]].dietary_labels.append(
-                    DietaryLabel(link["code"], link["name"])
-                )
-        order.guest_groups = list(groups.values())
-        return order
+            groups[link["guest_group_id"]].allergens.append(Allergen(link["code"], link["name"]))
+        for link in db.execute(
+            "SELECT gd.guest_group_id, d.code, d.name FROM guest_group_dietary_labels gd"
+            " JOIN dietary_labels d ON d.code = gd.dietary_label_code"
+            f" WHERE gd.guest_group_id IN ({placeholders}) ORDER BY d.code",
+            list(groups),
+        ):
+            groups[link["guest_group_id"]].dietary_labels.append(
+                DietaryLabel(link["code"], link["name"])
+            )
+    order.guest_groups = list(groups.values())
+    return order
 
 
 def _to_order(row):
@@ -130,6 +168,21 @@ def _to_order(row):
         status_reason=row["status_reason"],
         estimated_total_nok=Decimal(str(row["estimated_total_nok"])),
         created_at=_parse_datetime(row["created_at"]),
+        customer=_to_customer(row),
+    )
+
+
+def _to_customer(row):
+    """Kunden fra en rad med customer_*-kolonner (uten passordhash), ellers None."""
+    if "customer_email" not in row.keys() or row["customer_email"] is None:
+        return None
+    return User(
+        id=row["user_id"],
+        email=row["customer_email"],
+        name=row["customer_name"],
+        phone=row["customer_phone"],
+        password_hash="",
+        role=Role(row["customer_role"]),
     )
 
 

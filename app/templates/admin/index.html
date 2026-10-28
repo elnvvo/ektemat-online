@@ -3,7 +3,8 @@
 {% block content %}
   <h1>Adminpanel</h1>
   <ul class="admin-links">
+    <li><a href="{{ url_for('admin.orders') }}">Bestillinger</a> – se, filtrer og behandle bestillinger og betaling</li>
     <li><a href="{{ url_for('admin.items') }}">Matretter</a> – legg til, endre, publiser og fjern retter</li>
   </ul>
-  <p class="placeholder">Bestillinger og spørsmål kommer her (US-12, US-17).</p>
+  <p class="placeholder">Spørsmål fra kunder kommer her (US-17).</p>
 {% endblock %}

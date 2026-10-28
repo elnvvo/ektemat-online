@@ -9,5 +9,9 @@ class ValidationError(Exception):
         self.messages = messages
 
 
+class InvalidTransitionError(ValidationError):
+    """Overgangen er ikke lov i tilstandsmaskinen (design.md §4 og §5)."""
+
+
 class DuplicateEmailError(Exception):
     """Det finnes allerede en bruker med denne e-postadressen."""

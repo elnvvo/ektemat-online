@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Bestillinger · Admin · Ekte Mat{% endblock %}
+{% block content %}
+  <p><a href="{{ url_for('admin.index') }}">← Adminpanel</a></p>
+  <h1>Bestillinger</h1>
+
+  <form class="filter-bar" method="get" action="{{ url_for('admin.orders') }}">
+    <label>
+      Status
+      <select name="status">
+        <option value="">Alle</option>
+        {% for status in statuses %}
+          <option value="{{ status.value }}"{% if filters.status == status.value %} selected{% endif %}>{{ status.label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Fra
+      <input type="date" name="from" value="{{ filters['from'] }}">
+    </label>
+    <label>
+      Til
+      <input type="date" name="to" value="{{ filters.to }}">
+    </label>
+    <button class="button" type="submit">Filtrer</button>
+    <a href="{{ url_for('admin.orders') }}">Nullstill</a>
+  </form>
+
+  <p class="hint">{{ orders | length }} {{ "bestilling" if orders | length == 1 else "bestillinger" }}, sortert etter arrangementsdato.</p>
+
+  {% if orders %}
+    <div class="table-wrap">
+      <table class="cart-table orders-table">
+        <thead>
+          <tr>
+            <th scope="col">Bestilling</th>
+            <th scope="col">Kunde</th>
+            <th scope="col">Arrangementsdato</th>
+            <th scope="col" class="num">Gjester</th>
+            <th scope="col" class="num">Estimert total</th>
+            <th scope="col">Status</th>
+            <th scope="col">Betaling</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+            <tr>
+              <td data-label="Bestilling">
+                <a href="{{ url_for('admin.order_detail', order_id=order.id) }}">{{ order.number }}</a>
+              </td>
+              <td data-label="Kunde">
+                {% if order.customer %}
+                  {{ order.customer.name }}<span class="hint customer-email">{{ order.customer.email }}</span>
+                {% else %}<span class="hint">Slettet kunde</span>{% endif %}
+              </td>
+              <td data-label="Arrangementsdato">{{ order.event_date | date_no }}</td>
+              <td class="num" data-label="Gjester">{{ order.guest_count }}</td>
+              <td class="num" data-label="Estimert total">{{ order.estimated_total_nok | nok }}</td>
+              <td data-label="Status"><span class="status status-{{ order.status.value }}">{{ order.status.label }}</span></td>
+              <td data-label="Betaling">{{ order.payment_status.label }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="placeholder">Ingen bestillinger passer filteret.</p>
+  {% endif %}
+{% endblock %}
