@@ -1,7 +1,7 @@
 """Ekte Mat Online – application factory."""
 import os
 
-from flask import Flask, render_template
+from flask import Flask, render_template, session
 
 from app.config import Config
 
@@ -37,8 +37,14 @@ def create_app(test_config=None):
     app.before_request(load_current_user)
     app.register_error_handler(403, forbidden)
     app.add_template_filter(format_nok, "nok")
+    app.context_processor(cart_context)
 
     return app
+
+
+def cart_context():
+    """Antall linjer i handlekurven til toppmenyen (leser bare sessionen, ingen database)."""
+    return {"cart_line_count": len(session.get("cart") or {})}
 
 
 def forbidden(error):

@@ -32,6 +32,16 @@ class SqliteFoodItemRepository(FoodItemRepository):
             return None
         return self._with_relations([row])[0]
 
+    def get_by_ids(self, item_ids):
+        ids = [int(item_id) for item_id in item_ids]
+        if not ids:
+            return []
+        placeholders = ",".join("?" * len(ids))
+        rows = get_db().execute(
+            f"SELECT * FROM food_items WHERE id IN ({placeholders}) ORDER BY name", ids
+        ).fetchall()
+        return self._with_relations(rows)
+
     def list_event_categories(self):
         rows = get_db().execute("SELECT id, name FROM event_categories ORDER BY name").fetchall()
         return [EventCategory(id=row["id"], name=row["name"]) for row in rows]

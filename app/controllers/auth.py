@@ -14,6 +14,11 @@ def load_current_user():
         session.clear()
 
 
+def is_safe_next(url):
+    """Bare relative stier på dette nettstedet (hindrer open redirect)."""
+    return url.startswith("/") and not url.startswith("//") and "\\" not in url
+
+
 def _redirect_to_login():
     return redirect(url_for("account.login", next=request.full_path.rstrip("?")))
 

@@ -34,6 +34,14 @@
             {% else %}
               <p class="allergens">Ingen merkepliktige allergener</p>
             {% endif %}
+            <form class="add-to-cart" method="post" action="{{ url_for('shop.cart_add') }}">
+              <input type="hidden" name="item_id" value="{{ item.id }}">
+              <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+              <label for="qty-{{ item.id }}">Antall</label>
+              <input id="qty-{{ item.id }}" name="quantity" type="number" inputmode="numeric"
+                     min="{{ item.min_order_qty }}" step="1" value="{{ item.min_order_qty }}">
+              <button class="button" type="submit">Legg i handlekurv</button>
+            </form>
           </div>
         </article>
       {% endfor %}

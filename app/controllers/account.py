@@ -2,6 +2,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from app.controllers.auth import is_safe_next
 from app.models.errors import DuplicateEmailError, ValidationError
 from app.models.repositories import user_repository
 from app.models.user import User
@@ -55,7 +56,7 @@ def login():
         else:
             _start_session(user)
             flash(f"Du er logget inn som {user.name}.")
-            return redirect(next_url if _is_safe_next(next_url) else url_for("shop.menu"))
+            return redirect(next_url if is_safe_next(next_url) else url_for("shop.menu"))
 
     status = 401 if error else 200
     return (
@@ -72,10 +73,9 @@ def logout():
 
 
 def _start_session(user):
+    """Ny session ved innlogging (hindrer session fixation), men handlekurven beholdes."""
+    cart = session.get("cart")
     session.clear()
     session["user_id"] = user.id
-
-
-def _is_safe_next(url):
-    """Bare relative stier på dette nettstedet (hindrer open redirect)."""
-    return url.startswith("/") and not url.startswith("//") and "\\" not in url
+    if cart:
+        session["cart"] = cart

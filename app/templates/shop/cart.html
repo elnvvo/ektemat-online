@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Handlekurv · Ekte Mat{% endblock %}
+{% block content %}
+  <h1>Handlekurv</h1>
+
+  {% if cart.is_empty %}
+    <p>Handlekurven er tom.</p>
+    <p><a class="button" href="{{ url_for('shop.menu') }}">Se menyen</a></p>
+  {% else %}
+    <div class="table-wrap">
+      <table class="cart-table">
+        <thead>
+          <tr>
+            <th scope="col">Rett</th>
+            <th scope="col">Antall</th>
+            <th scope="col" class="num">Pris per stk</th>
+            <th scope="col" class="num">Sum</th>
+            <th scope="col"><span class="visually-hidden">Fjern</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for line in cart.lines %}
+            {% set item = line.food_item %}
+            <tr>
+              <td data-label="Rett">
+                {{ item.name }}
+                <span class="hint">Minimum {{ item.min_order_qty }} stk</span>
+              </td>
+              <td data-label="Antall">
+                <form class="qty-form" method="post" action="{{ url_for('shop.cart_update') }}">
+                  <input type="hidden" name="item_id" value="{{ item.id }}">
+                  <label class="visually-hidden" for="cart-qty-{{ item.id }}">Antall {{ item.name }}</label>
+                  <input id="cart-qty-{{ item.id }}" name="quantity" type="number" inputmode="numeric"
+                         min="{{ item.min_order_qty }}" step="1" value="{{ line.quantity }}">
+                  <button type="submit">Oppdater</button>
+                </form>
+              </td>
+              <td class="num" data-label="Pris per stk">{{ item.price_nok | nok }}</td>
+              <td class="num" data-label="Sum">{{ line.line_total_nok | nok }}</td>
+              <td>
+                <form method="post" action="{{ url_for('shop.cart_remove') }}">
+                  <input type="hidden" name="item_id" value="{{ item.id }}">
+                  <button type="submit" class="link-danger">Fjern</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row" colspan="3">Estimert total</th>
+            <td class="num total" data-label="Estimert total">{{ cart.estimated_total_nok | nok }}</td>
+            <td class="empty"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <p class="hint">Prisen er et estimat. Endelig pris bekreftes av Ekte Mat når bestillingen er behandlet.</p>
+    <p><a href="{{ url_for('shop.menu') }}">← Fortsett å handle</a></p>
+  {% endif %}
+{% endblock %}

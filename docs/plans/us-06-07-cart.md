@@ -1,0 +1,86 @@
+# Plan: US-06 og US-07 – handlekurv med estimert total og minimumsantall (C2)
+
+## Kontekst
+Kundene kan se menyen (US-01/02), og admin kan holde den oppdatert (US-03/04, `e43aeda` + `c12ab0e`). Neste steg er krav C2: kunden legger retter i en handlekurv og ser hva det vil koste før bestilling (US-06, E015 «quote … for internal approval»), og Ekte Mat avviser antall under minimum (US-07). Bestilling (US-08) er **utenfor scope**.
+
+Planen kopieres til `docs/plans/us-06-07-cart.md` som første steg etter godkjenning.
+
+## Filer
+
+```
+app/models/cart.py                              NY    Cart, CartLine (domeneklasser, ingen databasekode)
+app/models/repositories/base.py                 ENDRE FoodItemRepository.get_by_ids(ids)
+app/models/repositories/sqlite_food_item_repository.py ENDRE get_by_ids
+app/controllers/shop.py                         ENDRE /cart, /cart/add, /cart/update, /cart/remove, hjelpere for session
+app/controllers/auth.py                         ENDRE is_safe_next() flyttes hit fra account.py (gjenbrukes av /cart/add)
+app/controllers/account.py                      ENDRE importerer is_safe_next
+app/__init__.py                                 ENDRE context processor: cart_line_count til toppmenyen
+app/templates/shop/menu.html                    ENDRE skjema «Legg i handlekurv» med antallsfelt på hvert kort
+app/templates/shop/cart.html                    NY    linjer, antall, pris per stk, linjesum, estimert total
+app/templates/base.html                         ENDRE «Handlekurv (n)» i toppmenyen; flash med kategori (feil i rødt)
+app/static/css/style.css                        ENDRE kortskjema, handlekurvtabell, feilmelding-flash
+tests/test_cart.py                              NY    US-06 og US-07
+```
+
+## Domeneklasser – `app/models/cart.py` (design.md §2: `Cart 1 *-- 0..* CartLine --> 1 FoodItem`)
+- `CartLine(food_item: FoodItem, quantity: int)` med `line_total_nok = food_item.price_nok * quantity`
+- `Cart`:
+  - `Cart.from_session(data, items)`: `data` er `{"<item_id>": antall}` fra sessionen, og `items` er `FoodItem`-objekter fra repositoryet. Linjer for retter som ikke finnes, ikke er publisert eller er arkivert, tas ikke med, og navnene deres legges i `cart.removed_names`, så controlleren kan si fra.
+  - `add(item, quantity)`: legger til eller øker antallet på en linje
+  - `set_quantity(item_id, quantity)`: endrer antallet på en linje
+  - `remove(item_id)`
+  - `to_session() -> {"<item_id>": antall}`: **bare id og antall, aldri pris**
+  - `lines`, `line_count`, `estimated_total_nok` (sum av linjesummene, `Decimal`) og `is_empty`
+- **Validering (US-07) i modellen:** antallet tolkes som heltall («Antall må være et helt tall.»). Hvis det nye antallet på linjen blir under `food_item.min_order_qty`, kastes `ValidationError({"quantity": "Minimum for Fiskesuppe er 10 stk."})` **før** noe endres, så handlekurven er uendret. En rett som ikke er publisert eller er arkivert, kan ikke legges til («… er ikke tilgjengelig.»).
+
+## Priser kommer alltid fra repositoryet
+- Sessionen lagrer `session["cart"] = {"3": 30}`, altså bare id og antall.
+- Hver request bygger handlekurven på nytt med `food_item_repository().get_by_ids(ids)`. Pris, navn og minimumsantall kommer derfor alltid fra databasen. Endrer admin prisen, ser kunden den nye prisen neste gang handlekurven vises (den heter derfor «estimert total»).
+- Ny repository-metode `get_by_ids(ids) -> list[FoodItem]` (allerede nevnt i sekvensdiagrammet i design.md §3). Den gjenbruker `_with_relations`.
+
+## Controller – `app/controllers/shop.py`
+Ingen av rutene krever innlogging (en besøkende kan bruke handlekurven, UC2 i use case-diagrammet).
+
+| Rute | Metode | Hva |
+|---|---|---|
+| `/cart` | GET | viser handlekurven |
+| `/cart/add` | POST | `item_id`, `quantity`, `next` → legger til, og sender tilbake til menyen (samme kategori) |
+| `/cart/update` | POST | `item_id`, `quantity` → endrer antall |
+| `/cart/remove` | POST | `item_id` → fjerner linjen |
+
+- Hjelperne `_load_cart()` (session → repository → `Cart.from_session`) og `_save_cart(cart)` (`session["cart"] = cart.to_session()`).
+- Ved `ValidationError` vises en feilmelding med `flash(melding, "error")` og redirect tilbake. Handlekurven lagres ikke, så den er uendret.
+- Når det går bra, sier en flash-melding fra («Lagt i handlekurven: 30 × Fiskesuppe»).
+- `next` sjekkes med `is_safe_next()` (flyttes fra `account.py` til `auth.py`, så den kan brukes begge steder).
+
+## Views
+- **Menykort:** et lite skjema nederst på kortet med `<input type="number" name="quantity" min="{{ min }}" value="{{ min }}">`, et skjult `item_id` og `next = request.full_path`, og knappen **«Legg i handlekurv»**. `min`-attributtet er bare et hint i nettleseren; den ekte valideringen gjøres i modellen.
+- **`/cart`:** tabell med rett, antallsfelt med «Oppdater»-knapp, pris per stk, linjesum og «Fjern»-knapp per linje. Under tabellen står **«Estimert total: 5 670 kr»** (`nok`-filteret) og en kort tekst om at endelig pris bekreftes av Ekte Mat. Tom handlekurv viser «Handlekurven er tom» og en lenke til menyen. Plassen for «Send bestilling» står tom til US-08. Tabellen ligger i `.table-wrap`, så den fungerer på 360 px.
+- **Toppmenyen:** «Handlekurv (2)» vises for alle, både innloggede og besøkende. Antallet kommer fra en context processor som teller linjene i `session["cart"]` uten å slå opp i databasen.
+- **Flash:** `get_flashed_messages(with_categories=true)`. Kategorien `error` vises i rødt med `role="alert"`.
+
+## Tester – `tests/test_cart.py`
+Fixture: Fiskesuppe (189 kr, min. 10), Lam fra Voss (245 kr, min. 10) og en upublisert rett, lagt inn via repositoryet. Testene kjøres uten innlogging.
+
+**US-06**
+- `test_cart_total_30_fish_soup_is_5670` (enhetstest av modellen): `estimated_total_nok == Decimal("5670")`
+- `test_add_to_cart_shows_estimated_total`: POST 30 × fiskesuppe gir `/cart` med «5 670 kr»
+- `test_change_quantity_updates_total`: 30 → 40 gir «7 560 kr»
+- `test_remove_line_updates_total`: to linjer, og etter at én er fjernet, viser totalen bare den andre
+- `test_cart_works_without_login`
+- `test_session_stores_only_ids_and_quantities`: `client.session_transaction()` gir `{"<id>": 30}`, uten pris
+- `test_price_comes_from_repository`: prisen endres via repositoryet etter at retten er lagt i handlekurven, og `/cart` viser den nye prisen
+- `test_nav_shows_cart_line_count`: «Handlekurv (2)»
+
+**US-07**
+- `test_quantity_below_minimum_is_rejected`: 8 med minimum 10 gir meldingen «Minimum for Fiskesuppe er 10 stk.», og handlekurven er tom
+- `test_minimum_quantity_is_accepted`: 10 godtas
+- `test_update_below_minimum_keeps_cart_unchanged`: 30 → 8 avvises, og antallet er fortsatt 30
+- `test_cart_validation_lives_in_model`: `Cart.add` og `Cart.set_quantity` kaster `ValidationError` og endrer ikke handlekurven
+- `test_unpublished_item_cannot_be_added`
+
+## Verifisering
+1. `pytest` → alle tester grønne
+2. Start `flask` i nettleservinduet på nytt (koden er endret) og test uten å være innlogget. Legg 30 fiskesupper i handlekurven, og sjekk at «Handlekurv (1)» vises og at `/cart` viser 5 670 kr. Endre antallet til 8 (skal gi melding, og antallet skal fortsatt være 30). Endre til 40 (7 560 kr), og fjern linjen. Sjekk også visningen på 360 px.
+3. `grep sqlite3` treffer ikke controllerne eller templates
+4. Commit (når du ber om det) med en melding som nevner US-06 og US-07

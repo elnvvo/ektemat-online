@@ -42,6 +42,10 @@ class FoodItemRepository(ABC):
         """Retten med denne id-en (også arkivert), eller None."""
 
     @abstractmethod
+    def get_by_ids(self, item_ids: list[int]) -> list[FoodItem]:
+        """Rettene med disse id-ene (også upubliserte og arkiverte); ukjente id-er hoppes over."""
+
+    @abstractmethod
     def list_event_categories(self) -> list[EventCategory]:
         """Alle arrangementskategorier sortert på navn."""
 

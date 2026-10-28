@@ -11,6 +11,7 @@
     <a class="brand" href="{{ url_for('shop.index') }}">Ekte Mat</a>
     <nav>
       <a href="{{ url_for('shop.menu') }}">Meny</a>
+      <a href="{{ url_for('shop.cart') }}">Handlekurv ({{ cart_line_count }})</a>
       {% if g.user %}
         {% if g.user.is_admin %}<a href="{{ url_for('admin.index') }}">Admin</a>{% endif %}
         <span class="user-name">{{ g.user.name }}</span>
@@ -24,9 +25,13 @@
     </nav>
   </header>
   <main>
-    {% with messages = get_flashed_messages() %}
-      {% for message in messages %}
-        <p class="flash" role="status">{{ message }}</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        {% if category == "error" %}
+          <p class="flash flash-error" role="alert">{{ message }}</p>
+        {% else %}
+          <p class="flash" role="status">{{ message }}</p>
+        {% endif %}
       {% endfor %}
     {% endwith %}
     {% block content %}{% endblock %}
