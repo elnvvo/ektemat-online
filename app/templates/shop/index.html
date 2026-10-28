@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Meny · Ekte Mat{% endblock %}
+{% block title %}Ekte Mat{% endblock %}
 {% block content %}
   <h1>Ekte Mat catering</h1>
   <p>Ekte, sesongbasert mat til bursdag, konfirmasjon, bryllup, konferanse og julebord.</p>
-  <p class="placeholder">Menyen kommer her (US-01).</p>
+  <p><a class="button" href="{{ url_for('shop.menu') }}">Se menyen</a></p>
 {% endblock %}

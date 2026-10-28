@@ -32,4 +32,13 @@ def create_app(test_config=None):
     app.register_blueprint(account_bp)
     app.register_blueprint(admin_bp)
 
+    app.add_template_filter(format_nok, "nok")
+
     return app
+
+
+def format_nok(value):
+    """189 -> '189 kr', 5670 -> '5 670 kr', 189.5 -> '189,50 kr'."""
+    decimals = 0 if value == int(value) else 2
+    number = f"{value:,.{decimals}f}".replace(",", " ").replace(".", ",")
+    return f"{number} kr"

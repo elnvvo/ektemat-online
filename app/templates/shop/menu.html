@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ selected_category or "Meny" }} · Ekte Mat{% endblock %}
+{% block content %}
+  <h1>Meny</h1>
+
+  <nav class="filters" aria-label="Arrangement">
+    <a href="{{ url_for('shop.menu') }}"{% if not selected_category %} aria-current="page"{% endif %}>Alle</a>
+    {% for category in categories %}
+      <a href="{{ url_for('shop.menu', category=category.name) }}"
+         {%- if category.name == selected_category %} aria-current="page"{% endif %}>{{ category.name }}</a>
+    {% endfor %}
+  </nav>
+
+  {% if items %}
+    <div class="cards">
+      {% for item in items %}
+        <article class="card">
+          <img src="{{ url_for('static', filename=item.image_path or 'img/placeholder.svg') }}"
+               alt="{{ item.name }}" width="400" height="300">
+          <div class="card-body">
+            <h2>{{ item.name }}</h2>
+            {% if item.dietary_labels %}
+              <p class="labels">
+                {% for label in item.dietary_labels %}
+                  <span class="label"><abbr title="{{ label.name }}">{{ label.code }}</abbr> {{ label.name }}</span>
+                {% endfor %}
+              </p>
+            {% endif %}
+            {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+            <p class="price">{{ item.price_nok | nok }} <span class="per">per stk</span></p>
+            <p class="min-order">Minimum {{ item.min_order_qty }} stk</p>
+            {% if item.allergens %}
+              <p class="allergens">Inneholder: {{ item.allergens | map(attribute="name") | join(", ") }}</p>
+            {% else %}
+              <p class="allergens">Ingen merkepliktige allergener</p>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="placeholder">Ingen retter i denne kategorien.</p>
+  {% endif %}
+{% endblock %}
