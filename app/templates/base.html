@@ -13,7 +13,11 @@
       <a href="{{ url_for('shop.menu') }}">Meny</a>
       <a href="{{ url_for('shop.cart') }}">Handlekurv ({{ cart_line_count }})</a>
       {% if g.user %}
-        {% if g.user.is_admin %}<a href="{{ url_for('admin.index') }}">Admin</a>{% endif %}
+        {% if g.user.is_admin %}
+          <a href="{{ url_for('admin.index') }}">Admin</a>
+        {% else %}
+          <a href="{{ url_for('account.orders') }}">Mine bestillinger</a>
+        {% endif %}
         <span class="user-name">{{ g.user.name }}</span>
         <form class="logout" method="post" action="{{ url_for('account.logout') }}">
           <button type="submit">Logg ut</button>

@@ -99,6 +99,10 @@ class OrderRepository(ABC):
         """Lagrer en ny bestilling med linjer og gjestegrupper i én transaksjon (US-08)."""
 
     @abstractmethod
+    def list_for_user(self, user_id: int) -> list[Order]:
+        """Kundens bestillinger sortert etter arrangementsdato, uten linjer og grupper (US-11)."""
+
+    @abstractmethod
     def get_for_user(self, order_id: int, user_id: int) -> Order | None:
         """Bestillingen hvis den tilhører denne kunden, ellers None (NFR-06)."""
 

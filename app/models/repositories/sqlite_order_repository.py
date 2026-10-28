@@ -60,6 +60,12 @@ class SqliteOrderRepository(OrderRepository):
         ).fetchone()["created_at"]
         return replace(order, id=order_id, created_at=_parse_datetime(created_at))
 
+    def list_for_user(self, user_id):
+        rows = get_db().execute(
+            "SELECT * FROM orders WHERE user_id = ? ORDER BY event_date, id", (user_id,)
+        ).fetchall()
+        return [_to_order(row) for row in rows]
+
     def get_for_user(self, order_id, user_id):
         db = get_db()
         row = db.execute(
@@ -67,19 +73,7 @@ class SqliteOrderRepository(OrderRepository):
         ).fetchone()
         if row is None:
             return None
-
-        order = Order(
-            id=row["id"],
-            user_id=row["user_id"],
-            event_date=date.fromisoformat(row["event_date"]),
-            guest_count=row["guest_count"],
-            delivery_address=row["delivery_address"],
-            status=OrderStatus(row["status"]),
-            payment_status=PaymentStatus(row["payment_status"]),
-            status_reason=row["status_reason"],
-            estimated_total_nok=Decimal(str(row["estimated_total_nok"])),
-            created_at=_parse_datetime(row["created_at"]),
-        )
+        order = _to_order(row)
 
         # Navnet hentes fra matretten (finnes også når den er arkivert); prisen er kopien i ordrelinjen.
         for line in db.execute(
@@ -121,6 +115,22 @@ class SqliteOrderRepository(OrderRepository):
                 )
         order.guest_groups = list(groups.values())
         return order
+
+
+def _to_order(row):
+    """Ordren uten linjer og gjestegrupper."""
+    return Order(
+        id=row["id"],
+        user_id=row["user_id"],
+        event_date=date.fromisoformat(row["event_date"]),
+        guest_count=row["guest_count"],
+        delivery_address=row["delivery_address"],
+        status=OrderStatus(row["status"]),
+        payment_status=PaymentStatus(row["payment_status"]),
+        status_reason=row["status_reason"],
+        estimated_total_nok=Decimal(str(row["estimated_total_nok"])),
+        created_at=_parse_datetime(row["created_at"]),
+    )
 
 
 def _parse_datetime(value):

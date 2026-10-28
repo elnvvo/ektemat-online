@@ -65,6 +65,15 @@ def login():
     )
 
 
+@bp.route("/orders")
+@login_required
+def orders():
+    """US-11: den innloggede kundens egne bestillinger, sortert etter arrangementsdato."""
+    return render_template(
+        "account/orders.html", orders=order_repository().list_for_user(g.user.id)
+    )
+
+
 @bp.route("/orders/<int:order_id>")
 @login_required
 def order_detail(order_id):

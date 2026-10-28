@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Mine bestillinger · Ekte Mat{% endblock %}
+{% block content %}
+  <h1>Mine bestillinger</h1>
+
+  {% if orders %}
+    <div class="table-wrap">
+      <table class="cart-table orders-table">
+        <thead>
+          <tr>
+            <th scope="col">Bestilling</th>
+            <th scope="col">Arrangementsdato</th>
+            <th scope="col" class="num">Gjester</th>
+            <th scope="col" class="num">Estimert total</th>
+            <th scope="col">Status</th>
+            <th scope="col">Betaling</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+            <tr>
+              <td data-label="Bestilling">
+                <a href="{{ url_for('account.order_detail', order_id=order.id) }}">{{ order.number }}</a>
+              </td>
+              <td data-label="Arrangementsdato">{{ order.event_date | date_no }}</td>
+              <td class="num" data-label="Gjester">{{ order.guest_count }}</td>
+              <td class="num" data-label="Estimert total">{{ order.estimated_total_nok | nok }}</td>
+              <td data-label="Status"><span class="status status-{{ order.status.value }}">{{ order.status.label }}</span></td>
+              <td data-label="Betaling">{{ order.payment_status.label }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>Du har ingen bestillinger ennå.</p>
+    <p><a class="button" href="{{ url_for('shop.menu') }}">Se menyen</a></p>
+  {% endif %}
+{% endblock %}

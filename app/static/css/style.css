@@ -324,6 +324,25 @@ nav {
   color: var(--muted);
 }
 
+/* Ordrestatus (US-11) */
+.status-submitted,
+.status-in_preparation {
+  background: #fdf1d6;
+  color: #6b4e0f;
+}
+
+.status-approved,
+.status-delivered {
+  background: #e6efdc;
+  color: #36501f;
+}
+
+.status-rejected,
+.status-cancelled {
+  background: #fbe9e7;
+  color: #b3261e;
+}
+
 .item-form {
   max-width: 32rem;
 }

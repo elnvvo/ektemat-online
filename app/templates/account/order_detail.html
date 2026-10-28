@@ -5,7 +5,7 @@
 
   <dl class="order-facts">
     <dt>Status</dt>
-    <dd><span class="status status-on">{{ order.status.label }}</span></dd>
+    <dd><span class="status status-{{ order.status.value }}">{{ order.status.label }}</span></dd>
     <dt>Betaling</dt>
     <dd>{{ order.payment_status.label }}</dd>
     <dt>Sendt inn</dt>
@@ -63,5 +63,5 @@
     </table>
   </div>
   <p class="hint">Prisen er et estimat. Du hører fra Ekte Mat når bestillingen er behandlet.</p>
-  <p><a href="{{ url_for('shop.menu') }}">← Tilbake til menyen</a></p>
+  <p><a href="{{ url_for('account.orders') }}">← Mine bestillinger</a></p>
 {% endblock %}
