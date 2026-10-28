@@ -17,6 +17,12 @@ def order_repository():
     return SqliteOrderRepository()
 
 
+def question_repository():
+    from app.models.repositories.sqlite_question_repository import SqliteQuestionRepository
+
+    return SqliteQuestionRepository()
+
+
 def user_repository():
     from app.models.repositories.sqlite_user_repository import SqliteUserRepository
 

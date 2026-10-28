@@ -4,13 +4,13 @@ Alle ruter i denne blueprinten krever admin-rollen (US-20, NFR-06).
 """
 from datetime import date
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from app.controllers.auth import admin_required
+from app.controllers.auth import admin_required, is_safe_next
 from app.models.errors import ValidationError
 from app.models.food_item import FoodItem
 from app.models.order import REASON_REQUIRED, OrderStatus
-from app.models.repositories import food_item_repository, order_repository
+from app.models.repositories import food_item_repository, order_repository, question_repository
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -24,7 +24,41 @@ def require_admin():
 @bp.route("/", strict_slashes=False)
 @admin_required
 def index():
-    return render_template("admin/index.html")
+    return render_template(
+        "admin/index.html", unanswered_count=question_repository().count_unanswered()
+    )
+
+
+# US-17 / US-18: spørsmål fra kunder
+
+
+@bp.route("/questions")
+@admin_required
+def questions():
+    repository = question_repository()
+    return render_template(
+        "admin/questions.html",
+        unanswered=repository.list_unanswered(),
+        answered=repository.list_answered(),
+    )
+
+
+@bp.route("/questions/<int:question_id>/answer", methods=["POST"])
+@admin_required
+def answer_question(question_id):
+    repository = question_repository()
+    question = repository.get(question_id)
+    if question is None:
+        abort(404)
+    try:
+        question.answer_with(g.user, request.form.get("text"))
+        repository.save_answer(question)
+    except ValidationError as error:
+        _flash_errors(error)
+    else:
+        flash(f"Svaret på spørsmålet om {question.order_number} er sendt.")
+    next_url = request.form.get("next", "")
+    return redirect(next_url if is_safe_next(next_url) else url_for("admin.questions"))
 
 
 # US-03 / US-04: matretter
@@ -120,10 +154,12 @@ def orders():
 @bp.route("/orders/<int:order_id>")
 @admin_required
 def order_detail(order_id):
+    order = _get_order_or_404(order_id)
     return render_template(
         "admin/order_detail.html",
-        order=_get_order_or_404(order_id),
+        order=order,
         reason_required=REASON_REQUIRED,
+        questions=question_repository().list_for_order(order.id),
     )
 
 

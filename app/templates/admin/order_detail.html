@@ -73,6 +73,16 @@
     {% endif %}
   </section>
 
+  <section id="questions" class="questions-section" aria-labelledby="questions-heading">
+    <h2 id="questions-heading">Spørsmål fra kunden</h2>
+    {% if questions %}
+      {% from "_questions.html" import question_list %}
+      {{ question_list(questions, answer_next=url_for('admin.order_detail', order_id=order.id) ~ '#questions') }}
+    {% else %}
+      <p class="hint">Ingen spørsmål om denne bestillingen.</p>
+    {% endif %}
+  </section>
+
   <h2>Allergier og dietter</h2>
   {% if order.guest_groups %}
     <ul class="guest-groups">

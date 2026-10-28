@@ -4,7 +4,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.controllers.auth import is_safe_next, login_required
 from app.models.errors import DuplicateEmailError, ValidationError
-from app.models.repositories import order_repository, user_repository
+from app.models.question import Question
+from app.models.repositories import order_repository, question_repository, user_repository
 from app.models.user import User
 
 bp = Blueprint("account", __name__)
@@ -78,10 +79,35 @@ def orders():
 @login_required
 def order_detail(order_id):
     """US-10: bekreftelse og detaljer. Bare kundens egne bestillinger (NFR-06)."""
+    order = _own_order_or_404(order_id)
+    return render_template(
+        "account/order_detail.html",
+        order=order,
+        questions=question_repository().list_for_order(order.id),
+    )
+
+
+@bp.route("/orders/<int:order_id>/questions", methods=["POST"])
+@login_required
+def ask_question(order_id):
+    """US-16: spørsmål om en av kundens egne bestillinger."""
+    order = _own_order_or_404(order_id)
+    try:
+        question = Question.ask(order, g.user, request.form.get("text"))
+    except ValidationError as error:
+        for message in error.messages.values():
+            flash(message, "error")
+    else:
+        question_repository().add(question)
+        flash("Spørsmålet er sendt. Du får svar her på siden.")
+    return redirect(url_for("account.order_detail", order_id=order.id, _anchor="questions"))
+
+
+def _own_order_or_404(order_id):
     order = order_repository().get_for_user(order_id, g.user.id)
     if order is None:
-        abort(404)  # samme svar om ordren ikke finnes eller tilhører en annen
-    return render_template("account/order_detail.html", order=order)
+        abort(404)  # samme svar om ordren ikke finnes eller tilhører en annen (NFR-06)
+    return order
 
 
 @bp.route("/logout", methods=["POST"])

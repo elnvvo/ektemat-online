@@ -1,0 +1,34 @@
+{#- Felles visning av spørsmål og svar (US-16, US-17).
+    answer_next: når satt (admin), vises et svarskjema under ubesvarte spørsmål, og svaret sender tilbake hit.
+    show_order: viser bestillingsnummer og kunde (admin-listen). -#}
+{% macro question_list(questions, answer_next=None, show_order=False) %}
+  <ol class="questions">
+    {% for question in questions %}
+      <li class="question" id="question-{{ question.id }}">
+        <p class="question-meta">
+          <span class="status {{ 'status-approved' if question.is_answered else 'status-submitted' }}">{{ question.status_label }}</span>
+          {% if show_order %}
+            <a href="{{ url_for('admin.order_detail', order_id=question.order_id) }}">{{ question.order_number }}</a>
+            · {{ question.customer.name if question.customer else "Slettet kunde" }}
+            ·
+          {% endif %}
+          <time datetime="{{ question.asked_at.isoformat() }}">{{ question.asked_at | datetime_no }}</time>
+        </p>
+        <p class="question-text">{{ question.text }}</p>
+        {% if question.answer %}
+          <div class="answer">
+            <p class="question-meta">Svar fra Ekte Mat · <time datetime="{{ question.answer.answered_at.isoformat() }}">{{ question.answer.answered_at | datetime_no }}</time></p>
+            <p class="question-text">{{ question.answer.text }}</p>
+          </div>
+        {% elif answer_next %}
+          <form class="form answer-form" method="post" action="{{ url_for('admin.answer_question', question_id=question.id) }}">
+            <input type="hidden" name="next" value="{{ answer_next }}">
+            <label for="answer-{{ question.id }}">Svar</label>
+            <textarea id="answer-{{ question.id }}" name="text" rows="3" required></textarea>
+            <button class="button" type="submit">Send svar</button>
+          </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+{% endmacro %}

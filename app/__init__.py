@@ -38,6 +38,7 @@ def create_app(test_config=None):
     app.register_error_handler(403, forbidden)
     app.add_template_filter(format_nok, "nok")
     app.add_template_filter(format_date_no, "date_no")
+    app.add_template_filter(format_datetime_no, "datetime_no")
     app.context_processor(cart_context)
 
     return app
@@ -55,6 +56,11 @@ def forbidden(error):
 def format_date_no(value):
     """date(2027, 1, 15) -> '15.01.2027'. Bare dato, siden created_at lagres i UTC."""
     return value.strftime("%d.%m.%Y") if value else ""
+
+
+def format_datetime_no(value):
+    """datetime(2026, 10, 28, 11, 5) -> '28.10.2026 kl. 11:05' (lokal tid)."""
+    return value.strftime("%d.%m.%Y kl. %H:%M") if value else ""
 
 
 def format_nok(value):

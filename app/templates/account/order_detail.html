@@ -67,5 +67,21 @@
     </table>
   </div>
   <p class="hint">Prisen er et estimat. Du hører fra Ekte Mat når bestillingen er behandlet.</p>
+
+  <section id="questions" class="questions-section" aria-labelledby="questions-heading">
+    <h2 id="questions-heading">Spørsmål om bestillingen</h2>
+    {% if questions %}
+      {% from "_questions.html" import question_list %}
+      {{ question_list(questions) }}
+    {% else %}
+      <p class="hint">Har du spørsmål om bestillingen? Skriv dem her, så svarer Ekte Mat på denne siden.</p>
+    {% endif %}
+    <form class="form question-form" method="post" action="{{ url_for('account.ask_question', order_id=order.id) }}">
+      <label for="question-text">{{ "Nytt spørsmål" if questions else "Ditt spørsmål" }}</label>
+      <textarea id="question-text" name="text" rows="3" maxlength="2000" required></textarea>
+      <button class="button" type="submit">Send spørsmål</button>
+    </form>
+  </section>
+
   <p><a href="{{ url_for('account.orders') }}">← Mine bestillinger</a></p>
 {% endblock %}

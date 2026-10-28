@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_questions.html" import question_list %}
+{% block title %}Spørsmål · Admin · Ekte Mat{% endblock %}
+{% block content %}
+  <p><a href="{{ url_for('admin.index') }}">← Adminpanel</a></p>
+  <h1>Spørsmål fra kunder</h1>
+
+  <h2>Ubesvarte ({{ unanswered | length }})</h2>
+  {% if unanswered %}
+    <p class="hint">Eldste først.</p>
+    {{ question_list(unanswered, answer_next=url_for('admin.questions'), show_order=True) }}
+  {% else %}
+    <p class="placeholder">Ingen ubesvarte spørsmål.</p>
+  {% endif %}
+
+  {% if answered %}
+    <h2>Nylig besvart</h2>
+    {{ question_list(answered, show_order=True) }}
+  {% endif %}
+{% endblock %}

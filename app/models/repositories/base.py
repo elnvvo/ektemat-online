@@ -9,6 +9,7 @@ from datetime import date
 
 from app.models.food_item import Allergen, DietaryLabel, EventCategory, FoodItem
 from app.models.order import Order, OrderStatus
+from app.models.question import Question
 from app.models.user import User
 
 
@@ -127,3 +128,31 @@ class OrderRepository(ABC):
 
 class QuestionRepository(ABC):
     """Spørsmål om bestillinger og svar fra Ekte Mat."""
+
+    @abstractmethod
+    def add(self, question: Question) -> Question:
+        """Lagrer et nytt spørsmål og returnerer det med id (US-16)."""
+
+    @abstractmethod
+    def get(self, question_id: int) -> Question | None:
+        """Spørsmålet med svar, eller None."""
+
+    @abstractmethod
+    def list_for_order(self, order_id: int) -> list[Question]:
+        """Spørsmålene om en bestilling med svar, i rekkefølgen de ble stilt."""
+
+    @abstractmethod
+    def list_unanswered(self) -> list[Question]:
+        """Ubesvarte spørsmål med kunde, eldste først (US-17)."""
+
+    @abstractmethod
+    def list_answered(self, limit: int = 20) -> list[Question]:
+        """Besvarte spørsmål med kunde og svar, nyeste svar først."""
+
+    @abstractmethod
+    def save_answer(self, question: Question) -> None:
+        """Lagrer svaret. Kaster AlreadyAnsweredError hvis det allerede finnes et."""
+
+    @abstractmethod
+    def count_unanswered(self) -> int:
+        """Antall ubesvarte spørsmål (US-18)."""
