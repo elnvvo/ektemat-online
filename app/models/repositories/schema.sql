@@ -48,6 +48,7 @@ CREATE TABLE food_items (
     price_nok     NUMERIC NOT NULL CHECK (price_nok >= 0),
     min_order_qty INTEGER NOT NULL DEFAULT 1 CHECK (min_order_qty >= 1),
     published     INTEGER NOT NULL DEFAULT 0 CHECK (published IN (0, 1)),
+    archived      INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0, 1)),
     image_path    TEXT,
     image_prompt  TEXT,
     origin        TEXT

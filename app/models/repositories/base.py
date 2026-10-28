@@ -31,15 +31,47 @@ class FoodItemRepository(ABC):
 
     @abstractmethod
     def list_published(self, category_name: str | None = None) -> list[FoodItem]:
-        """Publiserte retter sortert på navn, eventuelt bare i én kategori (US-01)."""
+        """Publiserte, ikke-arkiverte retter sortert på navn, eventuelt i én kategori (US-01)."""
+
+    @abstractmethod
+    def list_all(self) -> list[FoodItem]:
+        """Alle retter, også upubliserte og arkiverte, sortert på navn (admin, US-03)."""
+
+    @abstractmethod
+    def get(self, item_id: int) -> FoodItem | None:
+        """Retten med denne id-en (også arkivert), eller None."""
 
     @abstractmethod
     def list_event_categories(self) -> list[EventCategory]:
         """Alle arrangementskategorier sortert på navn."""
 
     @abstractmethod
+    def list_allergens(self) -> list[Allergen]:
+        """Alle allergener sortert på navn."""
+
+    @abstractmethod
+    def list_dietary_labels(self) -> list[DietaryLabel]:
+        """Alle diettmerker sortert på kode."""
+
+    @abstractmethod
     def add(self, item: FoodItem) -> FoodItem:
         """Lagrer en ny rett med koblinger og returnerer den med id."""
+
+    @abstractmethod
+    def update(self, item: FoodItem) -> FoodItem:
+        """Oppdaterer feltene og erstatter koblingene. Endrer ikke archived."""
+
+    @abstractmethod
+    def set_published(self, item_id: int, published: bool) -> None:
+        """Publiserer eller avpubliserer en rett (US-04)."""
+
+    @abstractmethod
+    def archive(self, item_id: int) -> None:
+        """«Fjerner» en rett: arkiverer og avpubliserer, sletter aldri (US-03)."""
+
+    @abstractmethod
+    def restore(self, item_id: int) -> None:
+        """Henter en arkivert rett tilbake som upublisert."""
 
     @abstractmethod
     def add_event_category(self, name: str) -> EventCategory:

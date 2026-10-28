@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% set title = "Endre " ~ item.name if item else "Ny matrett" %}
+{% block title %}{{ title }} · Admin · Ekte Mat{% endblock %}
+
+{% macro field_error(name) -%}
+  {% if errors[name] %}<p class="error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}
+{%- endmacro %}
+{% macro invalid(name) -%}
+  {% if errors[name] %} aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}
+{%- endmacro %}
+
+{% block content %}
+  <p><a href="{{ url_for('admin.items') }}">← Matretter</a></p>
+  <h1>{{ title }}</h1>
+  {% if item and item.archived %}
+    <p class="hint">Denne retten er arkivert og vises ikke på menyen.</p>
+  {% endif %}
+  {% if errors %}
+    <p class="error" role="alert">Retten ble ikke lagret. Rett opp feltene som er merket.</p>
+  {% endif %}
+
+  <form class="form item-form" method="post" novalidate>
+    <label for="name">Navn</label>
+    <input id="name" name="name" value="{{ form.name }}" required{{ invalid("name") }}>
+    {{ field_error("name") }}
+
+    <label for="description">Beskrivelse</label>
+    <textarea id="description" name="description" rows="3">{{ form.description }}</textarea>
+
+    <label for="price">Pris i NOK (per stk)</label>
+    <input id="price" name="price" inputmode="decimal" value="{{ form.price }}" required{{ invalid("price") }}>
+    {{ field_error("price") }}
+
+    <label for="min_order_qty">Minimumsantall</label>
+    <input id="min_order_qty" name="min_order_qty" type="number" min="1" step="1"
+           value="{{ form.min_order_qty }}" required{{ invalid("min_order_qty") }}>
+    {{ field_error("min_order_qty") }}
+
+    <fieldset{{ invalid("event_categories") }}>
+      <legend>Arrangementskategorier</legend>
+      {% for category in categories %}
+        <label class="check">
+          <input type="checkbox" name="categories" value="{{ category.id }}"
+                 {%- if category.id | string in form.categories %} checked{% endif %}>
+          {{ category.name }}
+        </label>
+      {% endfor %}
+    </fieldset>
+    {{ field_error("event_categories") }}
+
+    <fieldset>
+      <legend>Allergener</legend>
+      {% for allergen in allergens %}
+        <label class="check">
+          <input type="checkbox" name="allergens" value="{{ allergen.code }}"
+                 {%- if allergen.code in form.allergens %} checked{% endif %}>
+          {{ allergen.name }}
+        </label>
+      {% endfor %}
+    </fieldset>
+
+    <fieldset>
+      <legend>Diettmerker</legend>
+      {% for label in labels %}
+        <label class="check">
+          <input type="checkbox" name="labels" value="{{ label.code }}"
+                 {%- if label.code in form.labels %} checked{% endif %}>
+          {{ label.code }} – {{ label.name }}
+        </label>
+      {% endfor %}
+    </fieldset>
+
+    <label class="check">
+      <input type="checkbox" name="published" value="1"{% if form.published %} checked{% endif %}
+             {%- if item and item.archived %} disabled{% endif %}>
+      Publisert (vises på menyen)
+    </label>
+
+    <button class="button" type="submit">Lagre</button>
+  </form>
+{% endblock %}

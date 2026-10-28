@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Matretter · Admin · Ekte Mat{% endblock %}
+{% block content %}
+  <p><a href="{{ url_for('admin.index') }}">← Adminpanel</a></p>
+  <div class="page-head">
+    <h1>Matretter</h1>
+    <a class="button" href="{{ url_for('admin.new_item') }}">Ny matrett</a>
+  </div>
+
+  {% if items %}
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th scope="col">Navn</th>
+            <th scope="col">Pris</th>
+            <th scope="col">Min.</th>
+            <th scope="col">Kategorier</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="visually-hidden">Handlinger</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td class="num">{{ item.price_nok | nok }}</td>
+              <td class="num">{{ item.min_order_qty }}</td>
+              <td>{{ item.event_categories | map(attribute="name") | join(", ") }}</td>
+              <td>
+                {% if item.published %}<span class="status status-on">Publisert</span>
+                {% else %}<span class="status status-off">Ikke publisert</span>{% endif %}
+              </td>
+              <td class="actions">
+                <form method="post" action="{{ url_for('admin.publish_item', item_id=item.id) }}">
+                  <input type="hidden" name="published" value="{{ '0' if item.published else '1' }}">
+                  <button type="submit">{{ "Avpubliser" if item.published else "Publiser" }}</button>
+                </form>
+                <a href="{{ url_for('admin.edit_item', item_id=item.id) }}">Endre</a>
+                <form method="post" action="{{ url_for('admin.archive_item', item_id=item.id) }}"
+                      data-confirm="Fjerne {{ item.name }} fra menyen? Retten arkiveres og kan gjenopprettes."
+                      onsubmit="return confirm(this.dataset.confirm);">
+                  <button type="submit" class="danger">Fjern</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="placeholder">Ingen matretter ennå.</p>
+  {% endif %}
+
+  {% if archived_items %}
+    <h2>Arkiverte retter</h2>
+    <p class="hint">Vises ikke på menyen, men beholdes så gamle bestillinger kan vise hva som ble bestilt.</p>
+    <div class="table-wrap">
+      <table class="admin-table archived">
+        <tbody>
+          {% for item in archived_items %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td class="num">{{ item.price_nok | nok }}</td>
+              <td class="actions">
+                <form method="post" action="{{ url_for('admin.restore_item', item_id=item.id) }}">
+                  <button type="submit">Gjenopprett</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endblock %}

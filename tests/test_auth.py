@@ -127,29 +127,33 @@ def test_admin_link_only_for_admin(client, customer, admin):
     assert 'href="/admin/"' in client.get("/menu").get_data(as_text=True)
 
 
-def admin_urls(app):
-    """Én URL per /admin-rute, med 1 som verdi for alle parametere."""
-    urls = []
+def admin_routes(app):
+    """(metode, URL) per /admin-rute, med 1 som verdi for alle parametere.
+
+    Bruker rutens egen metode (GET, ellers POST); feil metode gir 405 før tilgangssjekken.
+    """
+    routes = []
     for rule in app.url_map.iter_rules():
         if rule.endpoint.startswith("admin."):
-            urls.append(rule.build({arg: 1 for arg in rule.arguments})[1])
-    return urls
+            method = "GET" if "GET" in rule.methods else "POST"
+            routes.append((method, rule.build({arg: 1 for arg in rule.arguments})[1]))
+    return routes
 
 
 def test_every_admin_route_requires_admin_role(app, customer):
-    urls = admin_urls(app)
-    assert urls, "fant ingen admin-ruter"
+    routes = admin_routes(app)
+    assert routes, "fant ingen admin-ruter"
 
     anonymous = app.test_client()
-    for url in urls:
-        response = anonymous.get(url)
-        assert response.status_code == 302, url
-        assert response.headers["Location"].startswith("/login"), url
+    for method, url in routes:
+        response = anonymous.open(url, method=method)
+        assert response.status_code == 302, (method, url)
+        assert response.headers["Location"].startswith("/login"), (method, url)
 
     customer_client = app.test_client()
     login(customer_client, customer.email, CUSTOMER_PASSWORD)
-    for url in urls:
-        assert customer_client.get(url).status_code == 403, url
+    for method, url in routes:
+        assert customer_client.open(url, method=method).status_code == 403, (method, url)
 
 
 # NFR-03

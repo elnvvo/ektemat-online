@@ -74,6 +74,7 @@ classDiagram
         price_nok: Decimal
         min_order_qty: int
         published: bool
+        archived: bool
         image_path: str
         image_prompt: str
         origin: str [0..1]
@@ -166,7 +167,7 @@ classDiagram
 
 **How we used it:** this is the source for the domain classes in `app/models/` and for the repository methods. Decisions behind it:
 
-- **OrderLine copies `unit_price_nok`**, so a later price change does not alter old orders. Food items are hidden, never deleted (US-03).
+- **OrderLine copies `unit_price_nok`**, so a later price change does not alter old orders. Food items are archived (`archived = true`), never deleted (US-03).
 - **GuestGroup has no name field.** Allergy data is stored per group only (GDPR, NFR-04).
 - **Order status and payment status are two separate enumerations**, as the assignment requires (A3). Each has its own state machine.
 - **Cart is a domain class but is not persisted.** It lives in the Flask session until the order is submitted.
