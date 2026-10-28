@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_food_card.html" import food_card with context %}
+{% block title %}Bilde for {{ item.name }} · Admin · Ekte Mat{% endblock %}
+{% block content %}
+  <p><a href="{{ url_for('admin.items') }}">← Matretter</a> · <a href="{{ url_for('admin.edit_item', item_id=item.id) }}">Endre {{ item.name }}</a></p>
+  <h1>Bilde for {{ item.name }}</h1>
+
+  <div class="image-compare">
+    <section aria-labelledby="current-heading">
+      <h2 id="current-heading">Nåværende kort</h2>
+      {{ food_card(item, with_cart_form=False) }}
+    </section>
+
+    {% if pending %}
+      <section class="preview" aria-labelledby="preview-heading">
+        <h2 id="preview-heading">Forhåndsvisning</h2>
+        {{ food_card(item, image_path=pending_path, with_cart_form=False) }}
+        {% if pending.prompt %}<p class="hint">Instruks: {{ pending.prompt }}</p>{% endif %}
+        <div class="status-actions">
+          <form method="post" action="{{ url_for('admin.item_image_save', item_id=item.id) }}">
+            <button class="button" type="submit">Lagre</button>
+          </form>
+          <form method="post" action="{{ url_for('admin.item_image_cancel', item_id=item.id) }}">
+            <button class="secondary-button" type="submit">{{ "Avvis" if pending.prompt else "Avbryt" }}</button>
+          </form>
+        </div>
+        <p class="hint">Bildet er ikke lagret ennå. Kundene ser fortsatt det nåværende kortet.</p>
+      </section>
+    {% endif %}
+  </div>
+
+  <div class="image-forms">
+    <form class="form" method="post" action="{{ url_for('admin.item_image_upload', item_id=item.id) }}"
+          enctype="multipart/form-data">
+      <h2>Last opp bilde</h2>
+      <label for="image">Bildefil <span class="hint">(JPG eller PNG, maks 5 MB)</span></label>
+      <input id="image" name="image" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required>
+      <button class="button" type="submit">Forhåndsvis</button>
+    </form>
+
+    <form class="form" method="post" action="{{ url_for('admin.item_image_generate', item_id=item.id) }}">
+      <h2>Lag bilde fra instruks</h2>
+      <label for="prompt">Bildeinstruks</label>
+      <textarea id="prompt" name="prompt" rows="3" maxlength="1000" required
+                placeholder="F.eks. «Fiskesuppe i dyp tallerken, naturlig lys, rustikt trebord»">{{ pending.prompt if pending and pending.prompt else (item.image_prompt or "") }}</textarea>
+      {% if demo_mode %}
+        <p class="hint">Demo-modus: uten IMAGE_API_KEY i .env lages et enkelt plassholderbilde lokalt.</p>
+      {% endif %}
+      <button class="button" type="submit">Lag bilde</button>
+    </form>
+  </div>
+{% endblock %}

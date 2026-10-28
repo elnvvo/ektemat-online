@@ -1,0 +1,37 @@
+{#- Matkortet (US-01, US-02). Brukes på menyen og i forhåndsvisningen av bilder (US-05).
+    image_path: overstyrer bildet (forhåndsvisning). with_cart_form: «Legg i handlekurv» (menyen).
+    Importeres med «with context», siden skjemaet bruker request. -#}
+{% macro food_card(item, image_path=None, with_cart_form=True) %}
+  <article class="card">
+    <img src="{{ url_for('static', filename=image_path or item.image_path or 'img/placeholder.svg') }}"
+         alt="{{ item.name }}" width="400" height="300">
+    <div class="card-body">
+      <h2>{{ item.name }}</h2>
+      {% if item.dietary_labels %}
+        <p class="labels">
+          {% for label in item.dietary_labels %}
+            <span class="label"><abbr title="{{ label.name }}">{{ label.code }}</abbr> {{ label.name }}</span>
+          {% endfor %}
+        </p>
+      {% endif %}
+      {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+      <p class="price">{{ item.price_nok | nok }} <span class="per">per stk</span></p>
+      <p class="min-order">Minimum {{ item.min_order_qty }} stk</p>
+      {% if item.allergens %}
+        <p class="allergens">Inneholder: {{ item.allergens | map(attribute="name") | join(", ") }}</p>
+      {% else %}
+        <p class="allergens">Ingen merkepliktige allergener</p>
+      {% endif %}
+      {% if with_cart_form %}
+        <form class="add-to-cart" method="post" action="{{ url_for('shop.cart_add') }}">
+          <input type="hidden" name="item_id" value="{{ item.id }}">
+          <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+          <label for="qty-{{ item.id }}">Antall</label>
+          <input id="qty-{{ item.id }}" name="quantity" type="number" inputmode="numeric"
+                 min="{{ item.min_order_qty }}" step="1" value="{{ item.min_order_qty }}">
+          <button class="button" type="submit">Legg i handlekurv</button>
+        </form>
+      {% endif %}
+    </div>
+  </article>
+{% endmacro %}

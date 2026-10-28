@@ -37,6 +37,7 @@
                   <button type="submit">{{ "Avpubliser" if item.published else "Publiser" }}</button>
                 </form>
                 <a href="{{ url_for('admin.edit_item', item_id=item.id) }}">Endre</a>
+                <a href="{{ url_for('admin.item_image', item_id=item.id) }}">Bilde</a>
                 <a class="danger" href="{{ url_for('admin.archive_item', item_id=item.id) }}">Fjern</a>
               </td>
             </tr>

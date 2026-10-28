@@ -1,7 +1,9 @@
 """Ekte Mat Online – application factory."""
 import os
 
-from flask import Flask, render_template, session
+from urllib.parse import urlsplit
+
+from flask import Flask, flash, redirect, render_template, request, session, url_for
 
 from app.config import Config
 
@@ -36,6 +38,7 @@ def create_app(test_config=None):
 
     app.before_request(load_current_user)
     app.register_error_handler(403, forbidden)
+    app.register_error_handler(413, too_large)
     app.add_template_filter(format_nok, "nok")
     app.add_template_filter(format_date_no, "date_no")
     app.add_template_filter(format_datetime_no, "datetime_no")
@@ -51,6 +54,15 @@ def cart_context():
 
 def forbidden(error):
     return render_template("errors/403.html"), 403
+
+
+def too_large(error):
+    """US-05: opplastingen er større enn MAX_CONTENT_LENGTH."""
+    from app.controllers.auth import is_safe_next
+
+    flash("Filen er for stor. Bilder kan være maks 5 MB.", "error")
+    back = urlsplit(request.referrer or "").path  # bare stien, aldri en annen vert
+    return redirect(back if is_safe_next(back) else url_for("shop.index"))
 
 
 def format_date_no(value):

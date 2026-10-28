@@ -69,6 +69,10 @@ class FoodItemRepository(ABC):
         """Oppdaterer feltene og erstatter koblingene. Endrer ikke archived."""
 
     @abstractmethod
+    def set_image(self, item_id: int, image_path: str, image_prompt: str | None) -> None:
+        """Lagrer bildestien (relativt til static) og bildeinstruksen (US-05)."""
+
+    @abstractmethod
     def set_published(self, item_id: int, published: bool) -> None:
         """Publiserer eller avpubliserer en rett (US-04)."""
 

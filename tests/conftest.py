@@ -17,6 +17,8 @@ def app(tmp_path):
             "TESTING": True,
             "SECRET_KEY": "test",
             "DATABASE": str(tmp_path / "test.sqlite"),
+            "UPLOAD_FOLDER": str(tmp_path / "uploads"),
+            "IMAGE_API_KEY": None,
         }
     )
     with app.app_context():

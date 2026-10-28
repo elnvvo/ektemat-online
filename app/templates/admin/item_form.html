@@ -10,7 +10,10 @@
 {%- endmacro %}
 
 {% block content %}
-  <p><a href="{{ url_for('admin.items') }}">← Matretter</a></p>
+  <p>
+    <a href="{{ url_for('admin.items') }}">← Matretter</a>
+    {% if item %} · <a href="{{ url_for('admin.item_image', item_id=item.id) }}">Bilde for {{ item.name }}</a>{% endif %}
+  </p>
   <h1>{{ title }}</h1>
   {% if item and item.archived %}
     <p class="hint">Denne retten er arkivert og vises ikke på menyen.</p>

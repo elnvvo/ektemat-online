@@ -792,6 +792,59 @@ nav {
   cursor: pointer;
 }
 
+/* Bilde på matretten (US-05) */
+.image-compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 20rem));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.image-compare h2,
+.image-forms h2 {
+  font-size: 1.125rem;
+}
+
+.image-compare .preview .card {
+  outline: 3px solid var(--accent);
+}
+
+.image-compare .status-actions {
+  margin-top: 0.75rem;
+}
+
+.image-forms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.image-forms .form {
+  max-width: none;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.image-forms .form h2 {
+  margin: 0;
+}
+
+.image-forms .button {
+  align-self: flex-start;
+  margin-top: 0.75rem;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.image-forms input[type="file"] {
+  border: 0;
+  padding: 0.25rem 0;
+}
+
 .placeholder {
   color: var(--muted);
   font-style: italic;

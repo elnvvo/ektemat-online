@@ -4,11 +4,14 @@ Alle ruter i denne blueprinten krever admin-rollen (US-20, NFR-06).
 """
 from datetime import date
 
-from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, g, redirect, render_template, request, session, url_for
 
 from app.controllers.auth import admin_required, is_safe_next
 from app.models.errors import ValidationError
 from app.models.food_item import FoodItem
+from app.models.item_image import validate_image, validate_prompt
+from app.services import image_store
+from app.services.image_service import get_image_service
 from app.models.order import REASON_REQUIRED, OrderStatus
 from app.models.repositories import food_item_repository, order_repository, question_repository
 
@@ -214,6 +217,106 @@ def _get_order_or_404(order_id):
 def _flash_errors(error):
     for message in error.messages.values():
         flash(message, "error")
+
+
+# US-05: bilde på matretten (opplasting eller bildeinstruks, med forhåndsvisning)
+
+
+@bp.route("/items/<int:item_id>/image")
+@admin_required
+def item_image(item_id):
+    item = _get_or_404(item_id)
+    pending = _pending_image(item.id)
+    return render_template(
+        "admin/item_image.html",
+        item=item,
+        pending=pending,
+        pending_path=image_store.temp_url_path(pending["file"]) if pending else None,
+        demo_mode=get_image_service().is_demo,
+    )
+
+
+@bp.route("/items/<int:item_id>/image/upload", methods=["POST"])
+@admin_required
+def item_image_upload(item_id):
+    item = _get_or_404(item_id)
+    upload = request.files.get("image")
+    try:
+        data = upload.read() if upload else b""
+        extension = validate_image(upload.filename if upload else "", data)
+    except ValidationError as error:
+        _flash_errors(error)
+    else:
+        _set_pending(item.id, image_store.save_temp(data, upload.filename, extension), prompt=None)
+        flash("Forhåndsvisning klar. Trykk «Lagre» for å bruke bildet.")
+    return redirect(url_for("admin.item_image", item_id=item.id))
+
+
+@bp.route("/items/<int:item_id>/image/generate", methods=["POST"])
+@admin_required
+def item_image_generate(item_id):
+    item = _get_or_404(item_id)
+    try:
+        prompt = validate_prompt(request.form.get("prompt"))
+        image = get_image_service().generate(prompt)
+    except ValidationError as error:
+        _flash_errors(error)
+    else:
+        _set_pending(item.id, image_store.save_temp(image.data, item.name, image.extension), prompt=prompt)
+        flash("Bildet er laget. Trykk «Lagre» for å bruke det, eller «Avvis».")
+    return redirect(url_for("admin.item_image", item_id=item.id))
+
+
+@bp.route("/items/<int:item_id>/image/save", methods=["POST"])
+@admin_required
+def item_image_save(item_id):
+    item = _get_or_404(item_id)
+    pending = _pending_image(item.id)
+    if pending is None:
+        flash("Det er ikke noe nytt bilde å lagre.", "error")
+        return redirect(url_for("admin.item_image", item_id=item.id))
+
+    image_path = image_store.promote(pending["file"])
+    prompt = pending["prompt"] if pending["prompt"] is not None else item.image_prompt
+    food_item_repository().set_image(item.id, image_path, prompt)
+    image_store.delete_saved(item.image_path)  # forrige opplastede bilde (aldri plassholderen)
+    session.pop("pending_image", None)
+    flash(f"Nytt bilde lagret for {item.name}.")
+    return redirect(url_for("admin.item_image", item_id=item.id))
+
+
+@bp.route("/items/<int:item_id>/image/cancel", methods=["POST"])
+@admin_required
+def item_image_cancel(item_id):
+    """«Avbryt» (opplasting) eller «Avvis» (bildetjenesten): det gamle bildet blir stående."""
+    item = _get_or_404(item_id)
+    _clear_pending()
+    flash("Det nye bildet ble forkastet. Det gamle bildet er beholdt.")
+    return redirect(url_for("admin.item_image", item_id=item.id))
+
+
+def _pending_image(item_id):
+    """Ventende bilde for denne retten, ellers None. Ugyldige eller utdaterte rester ryddes bort."""
+    pending = session.get("pending_image")
+    if not pending:
+        return None
+    if pending.get("item_id") != item_id or not image_store.temp_exists(pending.get("file")):
+        if pending.get("item_id") != item_id:
+            return None  # hører til en annen rett; ryddes når den lagres/avbrytes eller blir gammel
+        session.pop("pending_image", None)
+        return None
+    return pending
+
+
+def _set_pending(item_id, temp_name, prompt):
+    _clear_pending()  # bare ett ventende bilde om gangen
+    session["pending_image"] = {"item_id": item_id, "file": temp_name, "prompt": prompt}
+
+
+def _clear_pending():
+    pending = session.pop("pending_image", None)
+    if pending:
+        image_store.discard(pending.get("file"))
 
 
 def _item_form(item):

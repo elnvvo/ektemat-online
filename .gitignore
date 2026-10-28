@@ -220,3 +220,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 .env
+
+# Opplastede bilder (US-05) – ikke i Git, men behold mappen
+app/static/uploads/*
+!app/static/uploads/.gitkeep

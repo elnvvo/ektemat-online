@@ -99,6 +99,14 @@ class SqliteFoodItemRepository(FoodItemRepository):
         db.commit()
         return item
 
+    def set_image(self, item_id, image_path, image_prompt):
+        db = get_db()
+        db.execute(
+            "UPDATE food_items SET image_path = ?, image_prompt = ? WHERE id = ?",
+            (image_path, image_prompt, item_id),
+        )
+        db.commit()
+
     def set_published(self, item_id, published):
         self._set_flags(item_id, published=published)
 
