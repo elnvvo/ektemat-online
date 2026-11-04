@@ -52,6 +52,15 @@ def user_repository():
     return SqliteUserRepository()
 
 
+def describe_storage(config):
+    """Hvilken lagring appen bruker, til oppstartsmeldingen – uten passord."""
+    if config["STORAGE"] == "neo4j":
+        from app.models.repositories.neo4j_connection import describe_target
+
+        return f"neo4j - {describe_target(config)}"
+    return f"sqlite - {config['DATABASE']}"
+
+
 def init_storage():
     """Tømmer og klargjør lagringen STORAGE peker på (brukes av seed.py og testene)."""
     if _storage() == "neo4j":

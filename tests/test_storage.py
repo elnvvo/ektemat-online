@@ -12,6 +12,7 @@ from app.models.repositories import (
     question_repository,
     user_repository,
 )
+from app.models.repositories.neo4j_connection import describe_target
 from app.models.repositories.neo4j_food_item_repository import Neo4jFoodItemRepository
 from app.models.repositories.neo4j_user_repository import Neo4jUserRepository
 from app.models.repositories.neo4j_order_repository import Neo4jOrderRepository
@@ -62,6 +63,40 @@ def test_invalid_storage_stops_create_app(tmp_path):
 def test_neo4j_without_connection_settings_stops_create_app(tmp_path):
     with pytest.raises(RuntimeError, match="NEO4J_URI"):
         make_app(tmp_path, STORAGE="neo4j", NEO4J_URI=None, NEO4J_USERNAME="neo4j", NEO4J_PASSWORD="x")
+
+
+def test_startup_shows_sqlite_storage(tmp_path, capsys):
+    make_app(tmp_path, STORAGE="sqlite", TESTING=False)
+
+    line = capsys.readouterr().err.strip()
+    assert line == f"* Lagring: sqlite - {tmp_path / 't.sqlite'}"
+
+
+def test_startup_shows_neo4j_storage_without_credentials(tmp_path, capsys):
+    app = make_app(
+        tmp_path,
+        STORAGE="neo4j",
+        TESTING=False,
+        NEO4J_URI="neo4j+s://abc123.databases.neo4j.io",
+        NEO4J_USERNAME="neo4j",
+        NEO4J_PASSWORD="hemmelig",
+        NEO4J_DATABASE="neo4j",
+    )
+
+    line = capsys.readouterr().err.strip()
+    assert line == "* Lagring: neo4j - neo4j+s://abc123.databases.neo4j.io (neo4j)"
+    assert "hemmelig" not in line
+    app.extensions["neo4j"].close()
+
+
+def test_describe_target_never_shows_userinfo():
+    config = {"NEO4J_URI": "bolt://bruker:hemmelig@localhost:7687", "NEO4J_DATABASE": None}
+    assert describe_target(config) == "bolt://localhost:7687 (standarddatabasen)"
+
+
+def test_tests_do_not_print_storage_line(tmp_path, capsys):
+    make_app(tmp_path)
+    assert "Lagring:" not in capsys.readouterr().err
 
 
 CYPHER = re.compile(r"\b(MATCH|CREATE|MERGE|SET|DELETE|RETURN|WHERE|UNWIND)\b")

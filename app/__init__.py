@@ -3,6 +3,7 @@ import os
 
 from urllib.parse import urlsplit
 
+import click
 from flask import Flask, current_app, flash, redirect, render_template, request, session, url_for
 
 from app.config import Config
@@ -36,6 +37,13 @@ def create_app(test_config=None):
         neo4j_connection.init_app(app)
         for error_class in neo4j_connection.CONNECTION_ERRORS:
             app.register_error_handler(error_class, storage_unavailable)
+
+    if not app.config.get("TESTING"):
+        # Vises når serveren starter, så det er lett å se hvilken lagring som faktisk brukes.
+        # .env leses bare ved oppstart: endres STORAGE, må serveren startes på nytt.
+        from app.models.repositories import describe_storage
+
+        click.echo(f" * Lagring: {describe_storage(app.config)}", err=True)
 
     from app.controllers.account import bp as account_bp
     from app.controllers.admin import bp as admin_bp

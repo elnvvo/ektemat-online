@@ -4,6 +4,7 @@ Alle Cypher-spørringer er konstanter, og alle verdier sendes som parametere ($n
 aldri satt inn i teksten (se tests/test_storage.py).
 """
 import atexit
+from urllib.parse import urlsplit
 
 from flask import current_app
 from neo4j import GraphDatabase, RoutingControl
@@ -98,7 +99,10 @@ def reset_database():
     ensure_constraints()
 
 
-def describe_target():
-    """Hvilken database seed.py vil tømme – uten brukernavn og passord."""
-    database = _database() or "standarddatabasen"
-    return f"{current_app.config['NEO4J_URI']} ({database})"
+def describe_target(config=None):
+    """Hvilken Neo4j-database som brukes – aldri med brukernavn eller passord."""
+    config = config if config is not None else current_app.config
+    parts = urlsplit(config.get("NEO4J_URI") or "")
+    host = parts.hostname or "?"
+    address = f"{parts.scheme}://{host}" + (f":{parts.port}" if parts.port else "")
+    return f"{address} ({config.get('NEO4J_DATABASE') or 'standarddatabasen'})"

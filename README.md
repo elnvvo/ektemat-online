@@ -63,7 +63,7 @@ Oblig 5: hele appen – matretter, brukere, bestillinger (med ordrelinjer og gje
    NEO4J_DATABASE=          (valgfri)
    ```
 3. `python seed.py` **sletter alt i Aura-databasen** og legger inn testdataene. Den spør først, siden databasen er delt i gruppen (`python seed.py --yes` hopper over spørsmålet).
-4. `flask run`
+4. `flask run`. Første linje viser hvilken lagring som brukes, f.eks. `* Lagring: neo4j - neo4j+s://<id>.databases.neo4j.io (standarddatabasen)`. `.env` leses bare når serveren starter, så **endrer du `STORAGE`, må serveren startes på nytt** (Ctrl+C og `flask run` igjen).
 
 | Kommando | Hva |
 |---|---|
