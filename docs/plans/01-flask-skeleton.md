@@ -3,7 +3,7 @@
 ## Kontekst
 Repoet har bare dokumentasjon (`docs/backlog.md`, `docs/design.md`), `CLAUDE.md`, en tom `README.md` og en `requirements.txt` med bare Flask. Før vi kan implementere user stories trenger vi et kjørbart MVC-skjelett som følger mappestrukturen i design.md §6, og som oppfyller NFR-02 (bare repository-laget rører databasen), NFR-03 (ingen hemmeligheter i koden, `.env` ignoreres) og NFR-09 (README med kommandoer, pytest). **Ingen user stories implementeres** – sidene er plassholdere.
 
-Planen kopieres til `docs/plans/flask-skeleton.md` som første steg etter godkjenning (regel i CLAUDE.md).
+Planen kopieres til `docs/plans/01-flask-skeleton.md` som første steg etter godkjenning (regel i CLAUDE.md).
 
 ## Filer som lages / endres
 

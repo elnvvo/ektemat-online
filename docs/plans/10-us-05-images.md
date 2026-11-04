@@ -3,7 +3,7 @@
 ## Kontekst
 Alle rettene viser i dag plassholderbildet. Admin trenger å kunne gi hvert kort et ordentlig bilde (A2), enten ved å laste opp et foto eller ved å skrive en instruks til en bildetjeneste. Bildet skal forhåndsvises på kortet før det lagres. Dette er den siste Must-storyen i backlogen. Appen må virke uten API-nøkkel, og nøkkelen skal aldri stå i koden (NFR-03).
 
-Planen kopieres til `docs/plans/us-05-images.md` som første steg etter godkjenning.
+Planen kopieres til `docs/plans/10-us-05-images.md` som første steg etter godkjenning.
 
 ## Filer
 

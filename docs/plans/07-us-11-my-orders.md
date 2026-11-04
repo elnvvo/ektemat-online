@@ -3,7 +3,7 @@
 ## Kontekst
 Kunden kan sende bestillinger og se bekreftelsen på `/orders/<id>` (US-08–10, `b2be577`), men har ingen oversikt over bestillingene sine. Kunder sender e-post bare for å spørre om status (E011 «Is our order for tomorrow confirmed?»). US-11 gir en liste med ordrestatus og betalingsstatus, så kunden slipper å spørre. Adminsidene for ordre (US-12–14) er **utenfor scope**.
 
-Planen kopieres til `docs/plans/us-11-my-orders.md` som første steg etter godkjenning.
+Planen kopieres til `docs/plans/07-us-11-my-orders.md` som første steg etter godkjenning.
 
 ## Filer
 

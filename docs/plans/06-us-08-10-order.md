@@ -3,7 +3,7 @@
 ## Kontekst
 Kunden kan fylle handlekurven (US-06/07, `05b08b0`) og logge inn (US-19), men kan ikke sende noen bestilling. I dag kommer forespørsler på e-post og blir borte («three julebord requests in the spam folder», INT-I). US-08 registrerer bestillingen med en gang, US-09 tar med allergier og dietter per gjestegruppe (GDPR: aldri navn, NFR-04), og US-10 viser en bekreftelse. Flyten følger sekvensdiagrammet i design.md §3. «Mine bestillinger» (US-11) og adminsidene for ordre er **utenfor scope**.
 
-Planen kopieres til `docs/plans/us-08-10-order.md` som første steg etter godkjenning.
+Planen kopieres til `docs/plans/06-us-08-10-order.md` som første steg etter godkjenning.
 
 ## Filer
 

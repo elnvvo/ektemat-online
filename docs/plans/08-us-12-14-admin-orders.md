@@ -3,7 +3,7 @@
 ## Kontekst
 Kundene kan sende bestillinger og følge dem (US-08–11, `7f51d6d`), men Ekte Mat har ingen måte å se eller behandle dem på. I dag skriver koordinatoren ut bestillingen og henger den på kjøkkentavla (ASIS), og depositum blir glemt (ASIS, E030). US-12 gir en ordreliste med filtre, US-13 flytter ordren gjennom statusene, og US-14 setter betalingsstatus. Begge statusene følger tilstandsmaskinene i design.md §4 og §5.
 
-Planen kopieres til `docs/plans/us-12-14-admin-orders.md` som første steg etter godkjenning.
+Planen kopieres til `docs/plans/08-us-12-14-admin-orders.md` som første steg etter godkjenning.
 
 ## Filer
 

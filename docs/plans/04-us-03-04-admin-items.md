@@ -3,7 +3,7 @@
 ## Kontekst
 Kundene ser menyen (US-01/02), og adminpanelet er beskyttet (US-20, `01ea2a3`), men det er bare en plassholder. Menyen endrer seg med sesongen, og kjøkkensjefen vil endre den selv (INT-M). US-03 (legge til, endre og fjerne retter) og US-04 (publisere og avpublisere) dekker krav A1. Bilder (US-05) er **utenfor scope**, så plassholderbildet beholdes.
 
-Planen kopieres til `docs/plans/us-03-04-admin-items.md` som første steg etter godkjenning.
+Planen kopieres til `docs/plans/04-us-03-04-admin-items.md` som første steg etter godkjenning.
 
 ## Arkivering i stedet for sletting
 - `schema.sql`: `food_items` får `archived INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0, 1))`. `FoodItem` får `archived: bool = False`. Jeg legger også `archived: bool` inn i klassediagrammet i `docs/design.md` §2, slik at dokumentasjonen stemmer med koden.

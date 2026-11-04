@@ -3,7 +3,7 @@
 ## Kontekst
 Kundene ringer eller sender e-post for å spørre om bestillingene sine. Ingen svarer (E003 «I called yesterday but nobody picked up»), og i travle perioder tar det en uke (INT-S, E006). US-16 lar kunden stille spørsmål på bestillingssiden, så hele samtalen ligger ved bestillingen. US-17 gir admin en liste over ubesvarte spørsmål, med de eldste først, så ingen blir glemt. US-18 (Could) viser antall ubesvarte spørsmål i admin-menyen. Det er enkelt, så det tas med.
 
-Planen kopieres til `docs/plans/us-16-18-questions.md` som første steg etter godkjenning.
+Planen kopieres til `docs/plans/09-us-16-18-questions.md` som første steg etter godkjenning.
 
 ## Filer
 
