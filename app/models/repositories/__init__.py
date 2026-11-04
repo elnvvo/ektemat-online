@@ -24,9 +24,9 @@ def food_item_repository():
 
 def order_repository():
     if _storage() == "neo4j":
-        from app.models.repositories.not_migrated import NotMigratedOrderRepository
+        from app.models.repositories.neo4j_order_repository import Neo4jOrderRepository
 
-        return NotMigratedOrderRepository()  # ikke flyttet til Neo4j ennå
+        return Neo4jOrderRepository()
     from app.models.repositories.sqlite_order_repository import SqliteOrderRepository
 
     return SqliteOrderRepository()
@@ -34,9 +34,9 @@ def order_repository():
 
 def question_repository():
     if _storage() == "neo4j":
-        from app.models.repositories.not_migrated import NotMigratedQuestionRepository
+        from app.models.repositories.neo4j_question_repository import Neo4jQuestionRepository
 
-        return NotMigratedQuestionRepository()  # ikke flyttet til Neo4j ennå
+        return Neo4jQuestionRepository()
     from app.models.repositories.sqlite_question_repository import SqliteQuestionRepository
 
     return SqliteQuestionRepository()

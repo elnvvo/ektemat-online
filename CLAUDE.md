@@ -5,7 +5,7 @@ Krav: docs/backlog.md. Design: docs/design.md.
 ## Struktur (MVC)
 - app/models/ – domeneklasser (validering ligger her, ikke i controllerne)
 - app/models/repositories/ – ENESTE sted som rører databasen. STORAGE=sqlite (standard) eller neo4j i .env velger implementasjon
-  (neo4j_*.py dekker matretter og brukere; bestillinger og spørsmål er ikke flyttet ennå)
+  (sqlite_*.py og neo4j_*.py dekker alle fire: matretter, brukere, bestillinger og spørsmål)
 - app/controllers/ – Flask-blueprints: shop, account, admin (+ auth.py med @login_required/@admin_required)
 - app/services/ – det som ikke er database: bildetjeneste og lagring av bildefiler (US-05)
 - app/templates/ – Jinja2-maler (views)
@@ -23,7 +23,7 @@ pytest -m neo4j               (Neo4j-testene; lager og sletter bare egne testnod
 Neo4j: STORAGE=neo4j og NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD (NEO4J_DATABASE valgfri) i .env
 
 ## Regler
-- Planlegg større funksjoner i plan mode, lagre planen i docs/plans/ som NN-navn.md (neste nummer er 11)
+- Planlegg større funksjoner i plan mode, lagre planen i docs/plans/ som NN-navn.md (neste nummer er 13)
 - Aldri hemmeligheter i koden; bruk .env (som ligger i .gitignore). IMAGE_API_KEY er valgfri
 - Cypher: alltid $parametere, aldri strengsammenslåing; egne id-egenskaper, ikke Neo4js interne id-er
 - Tester må aldri tømme Neo4j-databasen (den er delt); Neo4j-tester merkes @pytest.mark.neo4j

@@ -1,13 +1,11 @@
 """Valg av lagring med STORAGE (Oblig 5). Kjører alltid og trenger ingen Neo4j-database."""
 import ast
 import re
-from datetime import date
 from pathlib import Path
 
 import pytest
 
 from app import create_app
-from app.models.order import Order
 from app.models.repositories import (
     food_item_repository,
     order_repository,
@@ -16,11 +14,8 @@ from app.models.repositories import (
 )
 from app.models.repositories.neo4j_food_item_repository import Neo4jFoodItemRepository
 from app.models.repositories.neo4j_user_repository import Neo4jUserRepository
-from app.models.repositories.not_migrated import (
-    NotMigratedOrderRepository,
-    NotMigratedQuestionRepository,
-    StorageNotMigratedError,
-)
+from app.models.repositories.neo4j_order_repository import Neo4jOrderRepository
+from app.models.repositories.neo4j_question_repository import Neo4jQuestionRepository
 from app.models.repositories.sqlite_food_item_repository import SqliteFoodItemRepository
 from app.models.repositories.sqlite_order_repository import SqliteOrderRepository
 from app.models.repositories.sqlite_user_repository import SqliteUserRepository
@@ -54,8 +49,8 @@ def test_neo4j_storage_selects_neo4j_repositories(tmp_path):
     with app.app_context():
         assert isinstance(food_item_repository(), Neo4jFoodItemRepository)
         assert isinstance(user_repository(), Neo4jUserRepository)
-        assert isinstance(order_repository(), NotMigratedOrderRepository)
-        assert isinstance(question_repository(), NotMigratedQuestionRepository)
+        assert isinstance(order_repository(), Neo4jOrderRepository)
+        assert isinstance(question_repository(), Neo4jQuestionRepository)
     app.extensions["neo4j"].close()
 
 
@@ -67,30 +62,6 @@ def test_invalid_storage_stops_create_app(tmp_path):
 def test_neo4j_without_connection_settings_stops_create_app(tmp_path):
     with pytest.raises(RuntimeError, match="NEO4J_URI"):
         make_app(tmp_path, STORAGE="neo4j", NEO4J_URI=None, NEO4J_USERNAME="neo4j", NEO4J_PASSWORD="x")
-
-
-def test_not_migrated_repositories_read_empty_and_refuse_writes():
-    orders, questions = NotMigratedOrderRepository(), NotMigratedQuestionRepository()
-    assert orders.list_all() == [] and orders.list_for_user(1) == []
-    assert orders.get(1) is None and orders.get_for_user(1, 1) is None
-    assert questions.list_unanswered() == [] and questions.count_unanswered() == 0
-    with pytest.raises(StorageNotMigratedError):
-        orders.save(Order(None, 1, date(2027, 1, 1), 10, "Testveien 1"))
-    with pytest.raises(StorageNotMigratedError):
-        questions.add(None)
-
-
-def test_not_migrated_write_shows_501_page(tmp_path):
-    app = make_app(tmp_path, STORAGE="neo4j", **NEO4J_SETTINGS)
-
-    @app.route("/_test_not_migrated")
-    def not_migrated():
-        order_repository().save(None)
-
-    response = app.test_client().get("/_test_not_migrated")
-    assert response.status_code == 501
-    assert "ikke flyttet til Neo4j ennå" in response.get_data(as_text=True)
-    app.extensions["neo4j"].close()
 
 
 CYPHER = re.compile(r"\b(MATCH|CREATE|MERGE|SET|DELETE|RETURN|WHERE|UNWIND)\b")

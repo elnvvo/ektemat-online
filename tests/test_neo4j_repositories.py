@@ -19,12 +19,17 @@ from app.models.user import User
 
 pytestmark = pytest.mark.neo4j
 
-# Opprydding: bare nodene denne testkjøringen har laget.
+# Opprydding: bare nodene denne testkjøringen har laget (gjestegruppene først, via ordrene sine).
+DELETE_TEST_GUEST_GROUPS = (
+    "MATCH (o:Order)-[:HAS_GUEST_GROUP]->(g:GuestGroup) WHERE o.id IN $order_ids DETACH DELETE g"
+)
 DELETE_TEST_NODES = (
     "MATCH (n) WHERE (n:FoodItem AND n.id IN $item_ids)"
     " OR (n:EventCategory AND n.id IN $category_ids)"
     " OR (n:Allergen AND n.code IN $codes) OR (n:DietaryLabel AND n.code IN $codes)"
     " OR (n:User AND n.email IN $emails)"
+    " OR (n:Order AND n.id IN $order_ids)"
+    " OR (n:Question AND n.id IN $question_ids) OR (n:Answer AND n.question_id IN $question_ids)"
     " DETACH DELETE n"
 )
 
@@ -46,8 +51,12 @@ def neo4j_app(tmp_path):
 @pytest.fixture
 def created(neo4j_app):
     """Samler alt testen lager, og sletter akkurat det etterpå."""
-    made = {"item_ids": [], "category_ids": [], "codes": [], "emails": [], "run": uuid.uuid4().hex[:8]}
+    made = {
+        "item_ids": [], "category_ids": [], "codes": [], "emails": [], "order_ids": [], "question_ids": [],
+        "run": uuid.uuid4().hex[:8],
+    }
     yield made
+    run_write(DELETE_TEST_GUEST_GROUPS, order_ids=made["order_ids"])
     run_write(DELETE_TEST_NODES, **{k: v for k, v in made.items() if k != "run"})
 
 

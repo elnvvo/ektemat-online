@@ -28,7 +28,7 @@ def create_app(test_config=None):
         raise RuntimeError(
             f"STORAGE={app.config.get('STORAGE')!r} er ugyldig. Bruk 'sqlite' eller 'neo4j' i .env."
         )
-    # SQLite kobles alltid til: ordre og spørsmål ligger der til de er flyttet (Oblig 5).
+    # SQLite kobles alltid til (ufarlig); den brukes bare når STORAGE=sqlite.
     sqlite_connection.init_app(app)
     if app.config["STORAGE"] == "neo4j":
         from app.models.repositories import neo4j_connection
@@ -36,10 +36,6 @@ def create_app(test_config=None):
         neo4j_connection.init_app(app)
         for error_class in neo4j_connection.CONNECTION_ERRORS:
             app.register_error_handler(error_class, storage_unavailable)
-
-    from app.models.repositories.not_migrated import StorageNotMigratedError
-
-    app.register_error_handler(StorageNotMigratedError, storage_not_migrated)
 
     from app.controllers.account import bp as account_bp
     from app.controllers.admin import bp as admin_bp
@@ -69,11 +65,6 @@ def cart_context():
 
 def forbidden(error):
     return render_template("errors/403.html"), 403
-
-
-def storage_not_migrated(error):
-    """Oblig 5: funksjonen er ikke flyttet til Neo4j ennå."""
-    return render_template("errors/storage.html", title="Ikke tilgjengelig ennå", message=str(error)), 501
 
 
 def storage_unavailable(error):

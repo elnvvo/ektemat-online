@@ -339,14 +339,14 @@ ektemat-online/
 ```mermaid
 flowchart LR
     U(("User<br/>{id, email, name, role}"))
-    O(("Order<br/>{event_date, guest_count,<br/>status, payment_status}"))
+    O(("Order<br/>{id, created_at, event_date, guest_count,<br/>status, payment_status}"))
     F(("FoodItem<br/>{id, name, price_nok,<br/>min_order_qty, published, archived}"))
     E(("EventCategory<br/>{id, name}"))
     AL(("Allergen<br/>{code, name}"))
     D(("DietaryLabel<br/>{code, name}"))
-    G(("GuestGroup<br/>{size, notes}"))
-    Q(("Question<br/>{text, asked_at}"))
-    AN(("Answer<br/>{text, answered_at}"))
+    G(("GuestGroup<br/>{position, size, notes}"))
+    Q(("Question<br/>{id, text, asked_at}"))
+    AN(("Answer<br/>{question_id, text, answered_at}"))
 
     U -- "PLACED" --> O
     O -- "CONTAINS {quantity, unit_price_nok}" --> F
@@ -364,7 +364,7 @@ flowchart LR
 
 ![](design/07_graph_data_model.png)
 
-**How we used it:** to check that the domain model maps cleanly to a graph. OrderLine becomes the relationship `CONTAINS {quantity, unit_price_nok}`. Allergen and DietaryLabel become shared nodes, which makes queries like "all of tomorrow's orders with guests who avoid nuts" easy for the optional kitchen view (US-22). Cart is not stored. **Implementation (Oblig 5):** `id` is our own integer property from a `(:Sequence {name, value})` counter, never Neo4j's internal id, because URLs and the session use integer ids. Unique constraints on `User.email`, `User.id`, `FoodItem.id`, `EventCategory.id/name`, `Allergen.code` and `DietaryLabel.code`. `price_nok` is stored as text so prices stay exact.
+**How we used it:** to check that the domain model maps cleanly to a graph. OrderLine becomes the relationship `CONTAINS {quantity, unit_price_nok}`. Allergen and DietaryLabel become shared nodes, which makes queries like "all of tomorrow's orders with guests who avoid nuts" easy for the optional kitchen view (US-22). Cart is not stored. **Implementation (Oblig 5):** `id` is our own integer property from a `(:Sequence {name, value})` counter, never Neo4j's internal id, because URLs and the session use integer ids. Unique constraints on `User.email`, `User.id`, `FoodItem.id`, `EventCategory.id/name`, `Allergen.code` and `DietaryLabel.code`. `price_nok`, `unit_price_nok` and `estimated_total_nok` are stored as text so amounts stay exact. An order with its `CONTAINS` relationships and guest groups is saved in one transaction. `GuestGroup.position` keeps the order the customer entered the groups in (a graph has no order); guest groups have no name field (NFR-04). `Answer.question_id` has a unique constraint so the database itself allows at most one answer per question. Constraints also cover `Order.id` and `Question.id`.
 
 ## 8 Consistency check
 

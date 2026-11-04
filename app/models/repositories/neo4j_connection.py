@@ -24,6 +24,10 @@ CONSTRAINTS = (
     "CREATE CONSTRAINT allergen_code IF NOT EXISTS FOR (a:Allergen) REQUIRE a.code IS UNIQUE",
     "CREATE CONSTRAINT dietary_label_code IF NOT EXISTS FOR (d:DietaryLabel) REQUIRE d.code IS UNIQUE",
     "CREATE CONSTRAINT sequence_name IF NOT EXISTS FOR (s:Sequence) REQUIRE s.name IS UNIQUE",
+    "CREATE CONSTRAINT order_id IF NOT EXISTS FOR (o:Order) REQUIRE o.id IS UNIQUE",
+    "CREATE CONSTRAINT question_id IF NOT EXISTS FOR (q:Question) REQUIRE q.id IS UNIQUE",
+    # Maks ett svar per spørsmål (design.md §2: Question 1 *-- 0..1 Answer).
+    "CREATE CONSTRAINT answer_question_id IF NOT EXISTS FOR (a:Answer) REQUIRE a.question_id IS UNIQUE",
 )
 
 DELETE_EVERYTHING = "MATCH (n) DETACH DELETE n"

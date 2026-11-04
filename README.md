@@ -51,7 +51,7 @@ cp .env.example .env
 
 ## Kjøre med Neo4j (AuraDB)
 
-Oblig 5: matretter (med kategorier, allergener og diettmerker) og brukere kan lagres i Neo4j etter grafmodellen i [design.md §7](docs/design.md). Controllere, maler og domeneklasser er de samme; det er bare repository-implementasjonen som byttes.
+Oblig 5: hele appen – matretter, brukere, bestillinger (med ordrelinjer og gjestegrupper) og spørsmål med svar – kan lagres i Neo4j etter grafmodellen i [design.md §7](docs/design.md). Controllere, maler og domeneklasser er de samme; det er bare repository-implementasjonen som byttes.
 
 1. Lag en Neo4j AuraDB-instans (gratisversjonen holder) og last ned tilkoblingsfilen.
 2. Legg verdiene inn i `.env`, med disse navnene:
@@ -70,7 +70,7 @@ Oblig 5: matretter (med kategorier, allergener og diettmerker) og brukere kan la
 | `pytest` | Vanlige tester mot SQLite. Rører aldri Aura |
 | `pytest -m neo4j` | Tester Neo4j-repositoryene mot Aura-databasen i `.env`. Tømmer den ikke, men lager egne testnoder og sletter bare dem etterpå. Hoppes over uten tilkobling |
 
-**Ikke flyttet ennå:** bestillinger og spørsmål. Med `STORAGE=neo4j` viser «Mine bestillinger», admin-ordrelisten og spørsmålene ingenting, og «Send bestilling» og «Send spørsmål» gir en side som sier at det ikke er flyttet til Neo4j ennå. Bruk `STORAGE=sqlite` for å bestille. Gratisinstanser av Aura settes på pause etter en tid uten bruk; da viser appen «Databasen svarer ikke» til instansen er startet igjen i Aura-konsollen.
+Gratisinstanser av Aura settes på pause etter en tid uten bruk; da viser appen «Databasen svarer ikke» til instansen er startet igjen i Aura-konsollen.
 
 ## Hva appen kan
 
