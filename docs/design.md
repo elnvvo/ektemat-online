@@ -338,12 +338,12 @@ ektemat-online/
 
 ```mermaid
 flowchart LR
-    U(("User<br/>{email, name, role}"))
+    U(("User<br/>{id, email, name, role}"))
     O(("Order<br/>{event_date, guest_count,<br/>status, payment_status}"))
-    F(("FoodItem<br/>{name, price_nok,<br/>min_order_qty, published}"))
-    E(("EventCategory<br/>{name}"))
-    AL(("Allergen<br/>{code}"))
-    D(("DietaryLabel<br/>{code}"))
+    F(("FoodItem<br/>{id, name, price_nok,<br/>min_order_qty, published, archived}"))
+    E(("EventCategory<br/>{id, name}"))
+    AL(("Allergen<br/>{code, name}"))
+    D(("DietaryLabel<br/>{code, name}"))
     G(("GuestGroup<br/>{size, notes}"))
     Q(("Question<br/>{text, asked_at}"))
     AN(("Answer<br/>{text, answered_at}"))
@@ -364,7 +364,7 @@ flowchart LR
 
 ![](design/07_graph_data_model.png)
 
-**How we used it:** to check that the domain model maps cleanly to a graph. OrderLine becomes the relationship `CONTAINS {quantity, unit_price_nok}`. Allergen and DietaryLabel become shared nodes, which makes queries like "all of tomorrow's orders with guests who avoid nuts" easy for the optional kitchen view (US-22). Cart is not stored.
+**How we used it:** to check that the domain model maps cleanly to a graph. OrderLine becomes the relationship `CONTAINS {quantity, unit_price_nok}`. Allergen and DietaryLabel become shared nodes, which makes queries like "all of tomorrow's orders with guests who avoid nuts" easy for the optional kitchen view (US-22). Cart is not stored. **Implementation (Oblig 5):** `id` is our own integer property from a `(:Sequence {name, value})` counter, never Neo4j's internal id, because URLs and the session use integer ids. Unique constraints on `User.email`, `User.id`, `FoodItem.id`, `EventCategory.id/name`, `Allergen.code` and `DietaryLabel.code`. `price_nok` is stored as text so prices stay exact.
 
 ## 8 Consistency check
 

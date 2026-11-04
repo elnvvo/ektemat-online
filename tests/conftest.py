@@ -19,6 +19,8 @@ def app(tmp_path):
             "DATABASE": str(tmp_path / "test.sqlite"),
             "UPLOAD_FOLDER": str(tmp_path / "uploads"),
             "IMAGE_API_KEY": None,
+            # Alltid SQLite, uansett STORAGE i .env: testene skal aldri røre den delte Neo4j-databasen.
+            "STORAGE": "sqlite",
         }
     )
     with app.app_context():

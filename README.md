@@ -36,6 +36,8 @@ cp .env.example .env
 | `SEED_ADMIN_PASSWORD` | ja | Passord for admin-brukeren som `seed.py` lager |
 | `SEED_CUSTOMER_PASSWORD` | ja | Passord for de to testkundene (minst 8 tegn) |
 | `IMAGE_API_KEY`, `IMAGE_API_URL` | nei | Bildetjeneste for «Lag bilde fra instruks». Uten dem lages et enkelt demo-bilde lokalt |
+| `STORAGE` | nei | `sqlite` (standard) eller `neo4j`, se [Kjøre med Neo4j](#kjøre-med-neo4j-auradb) |
+| `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE` | bare med `STORAGE=neo4j` | Tilkoblingen til Neo4j AuraDB. `NEO4J_DATABASE` er valgfri |
 
 `.env` ligger i `.gitignore` og skal aldri committes.
 
@@ -45,7 +47,30 @@ cp .env.example .env
 |---|---|---|
 | Seed | `python seed.py` | **Sletter** og lager `instance/ektemat.sqlite` på nytt med én admin (`admin@ektemat.test`), to testkunder (`kunde1@example.test`, `kunde2@example.test`) og høstmenyen (4 retter; rakfisk er ikke publisert) |
 | Kjør | `flask run` | Starter appen på http://127.0.0.1:5000. Flask laster ikke kodeendringer automatisk; bruk `flask run --debug` under utvikling |
-| Test | `pytest` | Kjører alle testene i `tests/` |
+| Test | `pytest` | Kjører alle testene i `tests/`, alltid mot en midlertidig SQLite-database (også når `STORAGE=neo4j`) |
+
+## Kjøre med Neo4j (AuraDB)
+
+Oblig 5: matretter (med kategorier, allergener og diettmerker) og brukere kan lagres i Neo4j etter grafmodellen i [design.md §7](docs/design.md). Controllere, maler og domeneklasser er de samme; det er bare repository-implementasjonen som byttes.
+
+1. Lag en Neo4j AuraDB-instans (gratisversjonen holder) og last ned tilkoblingsfilen.
+2. Legg verdiene inn i `.env`, med disse navnene:
+   ```
+   STORAGE=neo4j
+   NEO4J_URI=neo4j+s://<id>.databases.neo4j.io
+   NEO4J_USERNAME=neo4j
+   NEO4J_PASSWORD=<passord>
+   NEO4J_DATABASE=          (valgfri)
+   ```
+3. `python seed.py` **sletter alt i Aura-databasen** og legger inn testdataene. Den spør først, siden databasen er delt i gruppen (`python seed.py --yes` hopper over spørsmålet).
+4. `flask run`
+
+| Kommando | Hva |
+|---|---|
+| `pytest` | Vanlige tester mot SQLite. Rører aldri Aura |
+| `pytest -m neo4j` | Tester Neo4j-repositoryene mot Aura-databasen i `.env`. Tømmer den ikke, men lager egne testnoder og sletter bare dem etterpå. Hoppes over uten tilkobling |
+
+**Ikke flyttet ennå:** bestillinger og spørsmål. Med `STORAGE=neo4j` viser «Mine bestillinger», admin-ordrelisten og spørsmålene ingenting, og «Send bestilling» og «Send spørsmål» gir en side som sier at det ikke er flyttet til Neo4j ennå. Bruk `STORAGE=sqlite` for å bestille. Gratisinstanser av Aura settes på pause etter en tid uten bruk; da viser appen «Databasen svarer ikke» til instansen er startet igjen i Aura-konsollen.
 
 ## Hva appen kan
 
@@ -76,7 +101,7 @@ app/
 ├── config.py              innstillinger fra .env
 ├── controllers/           C: shop.py, account.py, admin.py (blueprints), auth.py (tilgangskontroll)
 ├── models/                M: domeneklasser og validering (food_item, cart, order, question, user …)
-│   └── repositories/      M: base.py (grensesnitt), sqlite_*.py, schema.sql – eneste sted som rører databasen
+│   └── repositories/      M: base.py (grensesnitt), sqlite_*.py + schema.sql, neo4j_*.py – eneste sted som rører databasen
 ├── services/              bildetjeneste (image_service.py) og lagring av bildefiler (image_store.py)
 ├── templates/             V: base.html, shop/, account/, admin/
 └── static/                css/, img/ (plassholderbilde), uploads/ (opplastede bilder, ikke i Git)
@@ -85,4 +110,4 @@ seed.py                    syntetiske testdata
 tests/                     pytest
 ```
 
-Bare `app/models/repositories/` rører databasen (NFR-02), slik at SQLite kan byttes ut med Neo4j i Oblig 5.
+Bare `app/models/repositories/` rører databasen (NFR-02). Fabrikkene i `repositories/__init__.py` velger SQLite- eller Neo4j-implementasjonen ut fra `STORAGE`.

@@ -1,6 +1,7 @@
-"""Lager databasetabellene og legger inn syntetiske brukere og høstmenyen.
+"""Tømmer lagringen STORAGE peker på og legger inn syntetiske brukere og høstmenyen.
 
-Kjør: python seed.py   (sletter og lager databasen på nytt)
+Kjør: python seed.py          (SQLite: sletter og lager databasen på nytt)
+      python seed.py --yes    (Neo4j: hopper over spørsmålet før den delte databasen tømmes)
 """
 import os
 import sys
@@ -9,8 +10,8 @@ from decimal import Decimal
 from app import create_app
 from app.models.errors import ValidationError
 from app.models.food_item import Allergen, DietaryLabel, FoodItem
-from app.models.repositories import food_item_repository, user_repository
-from app.models.repositories.sqlite_connection import init_db
+from app.models.repositories import food_item_repository, init_storage, user_repository
+from app.models.repositories.neo4j_connection import describe_target
 from app.models.user import User
 
 PLACEHOLDER_IMAGE = "img/placeholder.svg"
@@ -133,16 +134,29 @@ def seed_menu():
     return items
 
 
+def confirm_neo4j_reset():
+    """Neo4j-databasen er delt i gruppen; ikke tøm den ved et uhell."""
+    print(f"STORAGE=neo4j: ALT i {describe_target()} blir slettet og erstattet med testdata.")
+    if "--yes" in sys.argv[1:]:
+        return
+    if input("Skriv ja for å fortsette: ").strip().lower() != "ja":
+        sys.exit("Avbrutt – ingenting er endret.")
+
+
 def main():
     users = build_users()
 
     app = create_app()
+    storage = app.config["STORAGE"]
     with app.app_context():
-        init_db()
+        if storage == "neo4j":
+            confirm_neo4j_reset()
+        init_storage()
         users = seed_users(users)
         items = seed_menu()
+        target = describe_target() if storage == "neo4j" else app.config["DATABASE"]
 
-    print(f"Database laget: {app.config['DATABASE']}")
+    print(f"Database laget ({storage}): {target}")
     for user in users:
         print(f"  {user.role.value:<8} {user.email}")
     for item in items:

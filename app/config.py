@@ -20,3 +20,11 @@ class Config:
     # Bildetjenesten. Uten nøkkel brukes DummyImageService (aldri nøkler i koden, NFR-03).
     IMAGE_API_KEY = os.environ.get("IMAGE_API_KEY") or None
     IMAGE_API_URL = os.environ.get("IMAGE_API_URL") or None
+
+    # Oblig 5: hvilken lagring repositoryene bruker – "sqlite" (standard) eller "neo4j".
+    STORAGE = (os.environ.get("STORAGE") or "sqlite").strip().lower()
+    # Neo4j AuraDB. Leses bare fra .env (NFR-03).
+    NEO4J_URI = os.environ.get("NEO4J_URI") or None
+    NEO4J_USERNAME = os.environ.get("NEO4J_USERNAME") or None
+    NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD") or None
+    NEO4J_DATABASE = os.environ.get("NEO4J_DATABASE") or None
